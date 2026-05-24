@@ -21,12 +21,13 @@
         canvas { display: block; touch-action: none; }
 
         #hud {
-            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 0; left: 0; right: 0;
             background: linear-gradient(180deg, #180a2b, #080312);
-            border: 2px solid #ffcc00; border-image: linear-gradient(to bottom, #ffcc00, #ff3366) 1;
-            padding: 4px 12px; color: white; display: flex; gap: 14px; align-items: center;
-            box-shadow: 0 0 20px rgba(255, 51, 102, 0.5); z-index: 10;
-            white-space: nowrap;
+            border-bottom: 2px solid #ff3366;
+            padding: 5px 12px 5px 8px; color: white;
+            display: flex; gap: 12px; align-items: center;
+            box-shadow: 0 0 16px rgba(255, 51, 102, 0.4); z-index: 10;
+            white-space: nowrap; overflow: hidden;
         }
         .hud-item { text-align: center; }
         .hud-label { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #00ffff; font-weight: bold; }
@@ -410,23 +411,24 @@
 
         /* ===== IN-GAME MENU ===== */
         #menu-btn {
-            position: absolute; top: 14px; left: 14px; z-index: 15;
-            width: 44px; height: 44px; background: rgba(24,10,43,0.92);
-            border: 2px solid #ff3366; cursor: pointer; padding: 10px 9px;
+            width: 32px; height: 32px;
+            background: rgba(255,51,102,0.15);
+            border: 1.5px solid #ff3366; cursor: pointer;
+            padding: 7px 6px;
             display: flex; flex-direction: column; justify-content: space-between;
-            gap: 0; box-shadow: 0 0 12px rgba(255,51,102,0.4);
+            flex-shrink: 0;
+            box-shadow: 0 0 8px rgba(255,51,102,0.3);
             transition: box-shadow 0.2s, border-color 0.2s;
         }
-        #menu-btn:hover { border-color: #ffcc00; box-shadow: 0 0 18px rgba(255,204,0,0.5); }
+        #menu-btn:hover { border-color: #ffcc00; box-shadow: 0 0 14px rgba(255,204,0,0.5); }
         #menu-btn span {
             display: block; height: 2px; background: #ff3366; border-radius: 2px;
-            transition: background 0.2s;
+            transition: transform 0.22s, opacity 0.22s, background 0.2s;
         }
         #menu-btn:hover span { background: #ffcc00; }
-        #menu-btn.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        #menu-btn.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
         #menu-btn.open span:nth-child(2) { opacity: 0; }
-        #menu-btn.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-        #menu-btn span { transition: transform 0.22s, opacity 0.22s, background 0.2s; }
+        #menu-btn.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
         /* DRAWER */
         #menu-backdrop {
@@ -681,17 +683,15 @@
         <div id="ball-bonus-sub">BONUS PUAN</div>
     </div>
     <div id="hud">
+        <button id="menu-btn" onclick="toggleMenu()" title="Menü">
+            <span></span><span></span><span></span>
+        </button>
         <div class="hud-item"><div class="hud-label">SEVIYE</div><div class="hud-value" id="level">1</div></div>
         <div class="hud-item"><div class="hud-label">ESLESMELER</div><div class="hud-value" id="pairs">0/2</div></div>
         <div class="hud-item"><div class="hud-label">PUAN</div><div class="hud-value" id="score">0</div></div>
         <div class="hud-item"><div class="hud-label">COMBO</div><div class="hud-value" id="combo" style="color:#ffcc00">1x</div></div>
         <div class="hud-item"><div class="hud-label">TOPLAR</div><div class="hud-value" id="balls" style="color:#00e5ff">6</div></div>
     </div>
-
-    <!-- MENU BUTTON -->
-    <button id="menu-btn" onclick="toggleMenu()" title="Menü">
-        <span></span><span></span><span></span>
-    </button>
 
     <!-- MENU DRAWER -->
     <div id="menu-drawer">
@@ -758,7 +758,7 @@
     <div id="ticker">HAFIZANI KULLAN!</div>
     <div id="win-popup">PERFECT!</div>
     <div id="combo-popup">1x COMBO!</div>
-    <div id="overlay">
+    <div id="overlay" class="hidden">
         <h1 id="ov-title">SLING FIND</h1>
         <p id="ov-p1">🎯 Sapanla at, duvarlardan sek, kartları eşleştir!</p>
         <p id="ov-p2">🧱 Top duvara değip karta değmezse YOK OLUR!</p>
@@ -1759,11 +1759,6 @@
         canvas.addEventListener('touchmove', movePull, {passive:false});
         window.addEventListener('touchend', endPull);
 
-        // İlk resize'ı DOM boyandıktan sonra çalıştır ki HUD yüksekliği doğru ölçülsün
-        requestAnimationFrame(() => { resize(); gameLoop(); });
-
-        // Slider başlangıç gradient
-        setVolume(15);
         let currentLang = 'tr';
 
         const STRINGS = {
@@ -1877,40 +1872,47 @@
         function setLang(lang) {
             currentLang = lang;
             const s = STRINGS[lang];
-            document.getElementById('ws-tagline').textContent = s.tagline;
-            document.getElementById('h1').textContent = s.h1;
-            document.getElementById('h2').textContent = s.h2;
-            document.getElementById('h3').textContent = s.h3;
-            document.getElementById('h4').textContent = s.h4;
-            document.getElementById('ws-start-btn').textContent = s.startBtn;
-            document.getElementById('btn-tr').classList.toggle('active', lang === 'tr');
-            document.getElementById('btn-en').classList.toggle('active', lang === 'en');
-            // Overlay
-            document.getElementById('ov-title').textContent = s.ovTitle;
-            document.getElementById('ov-p1').textContent = s.ovP1;
-            document.getElementById('ov-p2').textContent = s.ovP2;
-            document.getElementById('ov-p3').textContent = s.ovP3;
-            document.getElementById('ov-p4').textContent = s.ovP4;
-            document.getElementById('ov-p5').textContent = s.ovP5;
-            document.getElementById('ov-btn').textContent = s.ovBtn;
+
+            // Welcome screen
+            const safe = (id) => document.getElementById(id);
+            const safeQ = (sel) => document.querySelector(sel);
+
+            if(safe('ws-tagline')) safe('ws-tagline').textContent = s.tagline;
+            if(safe('h1')) safe('h1').textContent = s.h1;
+            if(safe('h2')) safe('h2').textContent = s.h2;
+            if(safe('h3')) safe('h3').textContent = s.h3;
+            if(safe('h4')) safe('h4').textContent = s.h4;
+            if(safe('ws-start-btn')) safe('ws-start-btn').textContent = s.startBtn;
+            if(safe('btn-tr')) safe('btn-tr').classList.toggle('active', lang === 'tr');
+            if(safe('btn-en')) safe('btn-en').classList.toggle('active', lang === 'en');
+            if(safe('player-name')) safe('player-name').placeholder = s.namePlaceholder;
+            if(safe('ws-name-label')) safe('ws-name-label').textContent = s.nameLabel;
+
+            // Overlay (how to play)
+            if(safe('ov-title')) safe('ov-title').textContent = s.ovTitle;
+            if(safe('ov-p1')) safe('ov-p1').textContent = s.ovP1;
+            if(safe('ov-p2')) safe('ov-p2').textContent = s.ovP2;
+            if(safe('ov-p3')) safe('ov-p3').textContent = s.ovP3;
+            if(safe('ov-p4')) safe('ov-p4').textContent = s.ovP4;
+            if(safe('ov-p5')) safe('ov-p5').textContent = s.ovP5;
+            if(safe('ov-btn')) safe('ov-btn').textContent = s.ovBtn;
+
             // HUD labels
-            document.querySelectorAll('.hud-label')[0].textContent = s.hudLevel;
-            document.querySelectorAll('.hud-label')[1].textContent = s.hudPairs;
-            document.querySelectorAll('.hud-label')[2].textContent = s.hudScore;
-            document.querySelectorAll('.hud-label')[3].textContent = s.hudCombo;
-            document.querySelectorAll('.hud-label')[4].textContent = s.hudBalls;
-            // Name input
-            document.getElementById('player-name').placeholder = s.namePlaceholder;
-            document.getElementById('ws-name-label').textContent = s.nameLabel;
-            // game over panel stat labels
+            const hudLabels = document.querySelectorAll('.hud-label');
+            const hudKeys = ['hudLevel','hudPairs','hudScore','hudCombo','hudBalls'];
+            hudKeys.forEach((k,i) => { if(hudLabels[i]) hudLabels[i].textContent = s[k]; });
+
+            // Game over panel
             const statLabels = document.querySelectorAll('.go-stat-label');
-            if (statLabels[0]) statLabels[0].textContent = s.goScore;
-            if (statLabels[1]) statLabels[1].textContent = s.goLevel;
-            if (statLabels[2]) statLabels[2].textContent = s.goRank;
-            // game over buttons
-            document.querySelector('.go-btn-play').textContent = s.goRestart;
-            document.querySelector('.go-btn-hs').textContent = s.goScores;
-            // menu (runs after updateMenuLabels is defined)
+            if(statLabels[0]) statLabels[0].textContent = s.goScore;
+            if(statLabels[1]) statLabels[1].textContent = s.goLevel;
+            if(statLabels[2]) statLabels[2].textContent = s.goRank;
+            const goPlay = safeQ('.go-btn-play');
+            const goHs   = safeQ('.go-btn-hs');
+            if(goPlay) goPlay.textContent = s.goRestart;
+            if(goHs)   goHs.textContent   = s.goScores;
+
+            // Menu labels (updateMenuLabels defined later in code)
             if (typeof updateMenuLabels === 'function') updateMenuLabels();
         }
 
@@ -1931,8 +1933,10 @@
             if (statLabels[0]) statLabels[0].textContent = t('goScore');
             if (statLabels[1]) statLabels[1].textContent = t('goLevel');
             if (statLabels[2]) statLabels[2].textContent = t('goRank');
-            document.querySelector('.go-btn-play').textContent = t('goRestart');
-            document.querySelector('.go-btn-hs').textContent = t('goScores');
+            const goPlay = document.querySelector('.go-btn-play');
+            const goHs   = document.querySelector('.go-btn-hs');
+            if (goPlay) goPlay.textContent = t('goRestart');
+            if (goHs)   goHs.textContent   = t('goScores');
 
             // Sıralamada kaçıncı olduğunu bul
             const scores = await loadScores();
@@ -1953,42 +1957,39 @@
 
         // ===== FIREBASE HI-SCORE SISTEMI =====
         let playerName = 'OYUNCU';
+        let db = null;
 
-        // Firebase config
-        const firebaseConfig = {
-            apiKey: "AIzaSyC3QkOPNtLuNYf9zJtG5reUaZx3ikX74U0",
-            authDomain: "slingfind.firebaseapp.com",
-            databaseURL: "https://slingfind-default-rtdb.firebaseio.com",
-            projectId: "slingfind",
-            storageBucket: "slingfind.firebasestorage.app",
-            messagingSenderId: "439781657093",
-            appId: "1:439781657093:web:56205afb0fbc0bb1442a6c"
-        };
-
-        // Firebase SDK'yı CDN'den yükle
-        const fbApp = firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyC3QkOPNtLuNYf9zJtG5reUaZx3ikX74U0",
+                authDomain: "slingfind.firebaseapp.com",
+                databaseURL: "https://slingfind-default-rtdb.firebaseio.com",
+                projectId: "slingfind",
+                storageBucket: "slingfind.firebasestorage.app",
+                messagingSenderId: "439781657093",
+                appId: "1:439781657093:web:56205afb0fbc0bb1442a6c"
+            };
+            if (typeof firebase !== 'undefined') {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+            }
+        } catch(e) { console.warn('Firebase init failed:', e); }
 
         async function saveScore(name, score, level) {
+            if (!db) return;
             try {
                 const key = name.toUpperCase().trim().replace(/[^A-Z0-9_]/g, '_');
                 const ref = db.ref('scores/' + key);
                 const snapshot = await ref.once('value');
                 const existing = snapshot.val();
-
-                // Sadece yeni rekor ise yaz
                 if (!existing || score > existing.score) {
-                    await ref.set({
-                        name: key,
-                        score,
-                        level,
-                        date: Date.now()
-                    });
+                    await ref.set({ name: key, score, level, date: Date.now() });
                 }
             } catch(e) { console.warn('Score save failed:', e); }
         }
 
         async function loadScores() {
+            if (!db) return [];
             try {
                 const ref = db.ref('scores').orderByChild('score').limitToLast(50);
                 const snapshot = await ref.once('value');
@@ -2032,10 +2033,14 @@
         }
         function goToGameMenu() {
             const nameInput = document.getElementById('player-name');
-            playerName = nameInput.value.trim().toUpperCase() || 'OYUNCU';
+            playerName = nameInput.value.trim().toUpperCase() || t('namePlaceholder');
             const ws = document.getElementById('welcome-screen');
             ws.classList.add('fade-out');
-            setTimeout(() => { ws.style.display = 'none'; }, 700);
+            setTimeout(() => {
+                ws.style.display = 'none';
+                // Overlay'i göster (nasıl oynanır + başla butonu)
+                overlay.classList.remove('hidden');
+            }, 700);
         }
 
         // Starfield animation
@@ -2493,8 +2498,11 @@
             }
         });
 
-        resize();
-        gameLoop();
+        // Başlatma: DOM tamamen boyandıktan sonra resize çalıştır
+        requestAnimationFrame(() => {
+            resize();
+            gameLoop();
+        });
         setVolume(15);
 
         // Service Worker kaydet (PWA)
