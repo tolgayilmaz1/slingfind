@@ -21,15 +21,16 @@
         canvas { display: block; touch-action: none; }
 
         #hud {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
             background: linear-gradient(180deg, #180a2b, #080312);
-            border: 3px solid #ffcc00; border-image: linear-gradient(to bottom, #ffcc00, #ff3366) 1;
-            padding: 8px 30px; color: white; display: flex; gap: 30px; align-items: center;
+            border: 2px solid #ffcc00; border-image: linear-gradient(to bottom, #ffcc00, #ff3366) 1;
+            padding: 4px 12px; color: white; display: flex; gap: 14px; align-items: center;
             box-shadow: 0 0 20px rgba(255, 51, 102, 0.5); z-index: 10;
+            white-space: nowrap;
         }
         .hud-item { text-align: center; }
-        .hud-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #00ffff; font-weight: bold; }
-        .hud-value { font-size: 24px; font-weight: 900; text-shadow: 2px 2px #000; }
+        .hud-label { font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #00ffff; font-weight: bold; }
+        .hud-value { font-size: 16px; font-weight: 900; text-shadow: 2px 2px #000; }
         #pairs { color: #ff3366; } #score { color: #00ff88; } #level { color: #ffcc00; }
 
         #overlay {
@@ -1128,17 +1129,39 @@
         const GRAVITY = 0.0;
         const BOUNCE_DAMPING = 0.92;
 
-        let WALL = { left: 10, right: 0, top: 10, bottom: 0 };
+        let WALL = { left: 8, right: 0, top: 55, bottom: 0 };
         let slingshot = { x: 0, y: 0, pullX: 0, pullY: 0, pulling: false, maxPull: 250 };
 
         function resize() {
             W = canvas.width = window.innerWidth;
             H = canvas.height = window.innerHeight;
-            WALL.right = W - 10;
-            WALL.bottom = H - 10;
-            slingshot.x = W * 0.15;
-            slingshot.y = H * 0.50;
+
+            // HUD'un gerçek yüksekliğini al
+            const hud = document.getElementById('hud');
+            const hudH = hud ? hud.getBoundingClientRect().height + 16 : 55;
+
+            WALL.left = 8;
+            WALL.right = W - 8;
+            WALL.top = hudH;
+            WALL.bottom = H - 8;
+
+            // Sapan: sol tarafın %18'i ama max 110px, dikey ortası
+            slingshot.x = Math.min(W * 0.18, 110);
+            slingshot.y = WALL.top + (WALL.bottom - WALL.top) * 0.55;
             if (!slingshot.pulling) { slingshot.pullX = slingshot.x; slingshot.pullY = slingshot.y; }
+
+            // Orientation değişince kartları yeniden yerleştir
+            if (typeof getLayoutForLevel === 'function' && gameState === 'playing' && cards.length > 0 && !levelCleared) {
+                let layout = getLayoutForLevel(currentLevel);
+                let positions = calculateCardPositions(cards.length, layout.type);
+                cards.forEach((c, i) => {
+                    if (positions[i]) {
+                        c.x = positions[i].x;
+                        c.y = positions[i].y;
+                        c.size = positions[i].size;
+                    }
+                });
+            }
         }
 
         class FXParticle {
@@ -1332,38 +1355,41 @@
 
         function calculateCardPositions(count, layoutType) {
             let positions = [];
-            let areaW = WALL.right - WALL.left - 200; // Sapan icin daha fazla yer
-            let areaH = WALL.bottom - WALL.top - 40;
-            let centerX = WALL.left + areaW * 0.55 + 80;
-            let centerY = WALL.top + areaH * 0.5 + 20;
 
-            // Kart boyutunu hesapla
-            let gap = 12;
+            // Sapanın sağından itibaren kart alanı başlasın
+            let slingshotZone = slingshot.x + Math.min(W * 0.12, 80);
+            let margin = 10;
+            let areaLeft  = slingshotZone;
+            let areaRight = WALL.right - margin;
+            let areaTop   = WALL.top + margin;
+            let areaBottom = WALL.bottom - margin;
+
+            let areaW = areaRight - areaLeft;
+            let areaH = areaBottom - areaTop;
+            let centerX = areaLeft + areaW / 2;
+            let centerY = areaTop  + areaH / 2;
+
+            let gap = Math.max(6, Math.min(12, W * 0.015));
             let cols, rows;
 
             if (layoutType === 'square') {
                 cols = Math.ceil(Math.sqrt(count));
                 rows = Math.ceil(count / cols);
             } else if (layoutType === 'pyramid') {
-                // Piramit: 4 kart=2x2, 6 kart=3x2, 8 kart=3+3+2 gibi
-                cols = Math.ceil(count / 2);
-                rows = 2;
-                if (count >= 9) { cols = 3; rows = 3; }
+                cols = Math.ceil(count / 2); rows = 2;
+                if (count >= 9)  { cols = 3; rows = 3; }
                 if (count >= 12) { cols = 4; rows = 3; }
                 if (count >= 16) { cols = 4; rows = 4; }
-            } else { // rectangle
+            } else {
                 cols = Math.min(Math.ceil(count / 2), 6);
                 rows = Math.ceil(count / cols);
             }
 
-            let cardSize = Math.min(
-                (areaW - gap * (cols - 1)) / cols,
-                (areaH - gap * (rows - 1)) / rows,
-                60
-            );
-            cardSize = Math.max(cardSize, 36);
+            let maxByW = (areaW - gap * (cols - 1)) / cols;
+            let maxByH = (areaH - gap * (rows - 1)) / rows;
+            let cardSize = Math.min(maxByW, maxByH, 70);
+            cardSize = Math.max(cardSize, 28);
 
-            // Grid hesapla
             let gridW = cols * cardSize + (cols - 1) * gap;
             let gridH = rows * cardSize + (rows - 1) * gap;
             let startX = centerX - gridW / 2 + cardSize / 2;
@@ -1372,11 +1398,12 @@
             for (let i = 0; i < count; i++) {
                 let c = i % cols;
                 let r = Math.floor(i / cols);
-                let x = startX + c * (cardSize + gap);
-                let y = startY + r * (cardSize + gap);
-                positions.push({ x, y, size: cardSize });
+                positions.push({
+                    x: startX + c * (cardSize + gap),
+                    y: startY + r * (cardSize + gap),
+                    size: cardSize
+                });
             }
-
             return positions;
         }
 
@@ -1672,7 +1699,7 @@
             initAudio();
             if (!canShoot || gameState !== 'playing' || revealTimer > 0 || isPaused) return;
             let pos = getPos(e);
-            if (Math.hypot(pos.x - slingshot.x, pos.y - slingshot.y) < 55) {
+            if (Math.hypot(pos.x - slingshot.x, pos.y - slingshot.y) < Math.min(W * 0.1, 70)) {
                 slingshot.pulling = true;
                 slingshot.pullX = pos.x; slingshot.pullY = pos.y;
                 playTone(350, 'sine', 0.05, 0.08);
@@ -1731,6 +1758,12 @@
         canvas.addEventListener('touchstart', startPull, {passive:false});
         canvas.addEventListener('touchmove', movePull, {passive:false});
         window.addEventListener('touchend', endPull);
+
+        // İlk resize'ı DOM boyandıktan sonra çalıştır ki HUD yüksekliği doğru ölçülsün
+        requestAnimationFrame(() => { resize(); gameLoop(); });
+
+        // Slider başlangıç gradient
+        setVolume(15);
         let currentLang = 'tr';
 
         const STRINGS = {
@@ -2462,7 +2495,6 @@
 
         resize();
         gameLoop();
-        // Slider başlangıç gradient
         setVolume(15);
 
         // Service Worker kaydet (PWA)
