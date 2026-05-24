@@ -1,0 +1,33 @@
+const CACHE = 'slingfind-v1';
+const ASSETS = [
+  '/slingfind/',
+  '/slingfind/index.html'
+];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  // Firebase isteklerini cache'leme, direkt geçir
+  if (e.request.url.includes('firebaseio.com') ||
+      e.request.url.includes('firebasejs') ||
+      e.request.url.includes('gstatic.com')) {
+    return;
+  }
+  e.respondWith(
+    caches.match(e.request).then(cached => cached || fetch(e.request))
+  );
+});

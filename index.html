@@ -1,0 +1,2476 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLING FIND</title>
+    <link rel="manifest" href="manifest.json"/>
+    <meta name="theme-color" content="#ff3366"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="Sling Find"/>
+    <link rel="apple-touch-icon" href="icon-192.png"/>
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #06030f; font-family: 'Courier New', monospace; user-select: none; }
+        canvas { display: block; touch-action: none; }
+
+        #hud {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(180deg, #180a2b, #080312);
+            border: 3px solid #ffcc00; border-image: linear-gradient(to bottom, #ffcc00, #ff3366) 1;
+            padding: 8px 30px; color: white; display: flex; gap: 30px; align-items: center;
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.5); z-index: 10;
+        }
+        .hud-item { text-align: center; }
+        .hud-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #00ffff; font-weight: bold; }
+        .hud-value { font-size: 24px; font-weight: 900; text-shadow: 2px 2px #000; }
+        #pairs { color: #ff3366; } #score { color: #00ff88; } #level { color: #ffcc00; }
+
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(6, 3, 15, 0.96); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white; z-index: 20;
+            transition: opacity 0.5s;
+        }
+        #overlay.hidden { opacity: 0; pointer-events: none; }
+        #overlay h1 { font-size: 48px; font-weight: 900; background: linear-gradient(0deg, #ff3366, #ffd700);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
+        #overlay p { font-size: 16px; margin-bottom: 8px; text-align: center; max-width: 600px; }
+        .btn { margin-top: 20px; padding: 15px 50px; font-size: 22px; font-weight: bold;
+            background: #ffcc00; color: #000; border: 4px solid #fff; cursor: pointer;
+            box-shadow: 6px 6px 0px #ff3366; font-family: inherit; }
+
+        #ticker {
+            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+            color: #fff; background: rgba(255, 51, 102, 0.9); border: 2px solid #fff;
+            padding: 10px 25px; font-size: 20px; font-weight: 900; pointer-events: none;
+            z-index: 10; opacity: 0; transition: opacity 0.2s;
+        }
+        #win-popup {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            font-size: 60px; font-weight: 900; color: #ffcc00; pointer-events: none; z-index: 15;
+            opacity: 0; transition: all 0.3s; text-align: center;
+        }
+        #win-popup.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* COMBO yazisi animasyonu */
+        @keyframes comboPop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            40% { transform: translate(-50%, -50%) scale(0.9); }
+            60% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        @keyframes comboFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -60%) scale(1.2); }
+        }
+        #combo-popup {
+            position: absolute; top: 35%; left: 50%;
+            font-size: 80px; font-weight: 900; color: #ffcc00;
+            text-shadow: 0 0 20px #ff3366, 0 0 40px #ff3366, 4px 4px 0 #000;
+            pointer-events: none; z-index: 100; opacity: 0;
+            transform: translate(-50%, -50%);
+        }
+        #combo-popup.show { animation: comboPop 0.4s ease-out forwards; }
+        #combo-popup.fade { animation: comboFade 0.5s ease-in forwards; }
+
+        /* BONUS BALL OVERLAY */
+        #ball-bonus-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(6,3,15,0.92); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 25;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+        }
+        #ball-bonus-overlay.show { opacity: 1; pointer-events: all; }
+        #ball-bonus-title {
+            font-size: clamp(22px,5vw,38px); font-weight: 900; color: #ffcc00;
+            letter-spacing: 4px; text-shadow: 0 0 20px #ffcc00;
+            margin-bottom: 18px;
+        }
+        #ball-bonus-balls {
+            display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+            max-width: 500px; margin-bottom: 22px;
+        }
+        .bb-ball {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #ffffff, #00e5ff);
+            box-shadow: 0 0 14px #00e5ff; display: flex; align-items: center;
+            justify-content: center; font-size: 18px; font-weight: 900;
+            color: #000; transform: scale(0); transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .bb-ball.pop { transform: scale(1); }
+        .bb-ball.counted {
+            background: radial-gradient(circle at 35% 35%, #ffcc00, #ff6600);
+            box-shadow: 0 0 14px #ffcc00;
+        }
+        #ball-bonus-total {
+            font-size: clamp(28px,6vw,52px); font-weight: 900;
+            color: #00ff88; text-shadow: 0 0 20px #00ff88;
+            letter-spacing: 2px; min-height: 64px;
+        }
+        #ball-bonus-sub {
+            font-size: 13px; color: #888; letter-spacing: 3px;
+            margin-top: 6px; text-transform: uppercase;
+        }
+        #confetti-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 24;
+        }
+
+        /* UÇAN TOP ANİMASYONU */
+        #fly-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 18;
+        }
+
+        /* Her bonus top için puan etiketi */
+        .bb-ball-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .bb-pts { font-size: 12px; font-weight: 900; color: #00ff88;
+            opacity: 0; text-shadow: 0 0 6px #00ff88; transition: opacity 0.3s; }
+        .bb-pts.show { opacity: 1; }
+
+        /* NAME INPUT */
+        .name-row {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            margin-top: 20px;
+        }
+        .name-label {
+            font-size: 10px; letter-spacing: 4px; color: #00ffff;
+            font-weight: bold; text-shadow: 0 0 8px #00ffff;
+        }
+        .name-input {
+            background: rgba(255,255,255,0.05); border: 2px solid #ffcc00;
+            color: #fff; font-family: 'Courier New', monospace;
+            font-size: 20px; font-weight: 900; letter-spacing: 3px;
+            padding: 8px 18px; text-align: center; width: 220px;
+            text-transform: uppercase; outline: none;
+            box-shadow: 0 0 12px rgba(255,204,0,0.3);
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        .name-input:focus {
+            border-color: #fff; box-shadow: 0 0 20px rgba(255,204,0,0.6);
+        }
+        .name-input::placeholder { color: #444; }
+
+        /* BUTTON ROW */
+        .ws-btn-row {
+            display: flex; gap: 14px; margin-top: 22px; flex-wrap: wrap; justify-content: center;
+        }
+        .ws-hs-btn {
+            padding: 13px 28px; font-size: 16px; font-weight: 900;
+            background: transparent; color: #ffcc00;
+            border: 3px solid #ffcc00; cursor: pointer; font-family: inherit;
+            letter-spacing: 2px; text-transform: uppercase;
+            transition: all 0.15s;
+        }
+        .ws-hs-btn:hover {
+            background: rgba(255,204,0,0.15); box-shadow: 0 0 16px #ffcc00;
+        }
+
+        /* HI-SCORE PANEL */
+        #hs-panel {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(6,3,15,0.97); z-index: 35;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #hs-panel.show { opacity: 1; pointer-events: all; }
+        #hs-inner {
+            background: linear-gradient(160deg, #0d0520, #180a2b);
+            border: 3px solid #ffcc00;
+            box-shadow: 0 0 40px rgba(255,204,0,0.3), inset 0 0 40px rgba(0,0,0,0.5);
+            padding: 30px 36px; min-width: min(480px, 92vw); max-height: 80vh;
+            overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 16px;
+        }
+        #hs-title {
+            font-size: 32px; font-weight: 900; color: #ffcc00;
+            text-shadow: 0 0 20px #ffcc00; letter-spacing: 4px;
+        }
+        #hs-list { width: 100%; }
+        .hs-loading { color: #555; text-align: center; font-size: 14px; padding: 20px; }
+        .hs-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,204,0,0.1);
+            transition: background 0.2s;
+        }
+        .hs-row:hover { background: rgba(255,204,0,0.05); }
+        .hs-rank {
+            width: 34px; font-size: 18px; font-weight: 900; text-align: center;
+            color: #555; flex-shrink: 0;
+        }
+        .hs-rank.gold { color: #ffcc00; text-shadow: 0 0 10px #ffcc00; }
+        .hs-rank.silver { color: #aaa; }
+        .hs-rank.bronze { color: #cd7f32; }
+        .hs-name {
+            flex: 1; font-size: 17px; font-weight: 900; color: #fff;
+            letter-spacing: 1px; text-transform: uppercase; overflow: hidden;
+            text-overflow: ellipsis; white-space: nowrap;
+        }
+        .hs-name.me { color: #00ffff; text-shadow: 0 0 8px #00ffff; }
+        .hs-score {
+            font-size: 20px; font-weight: 900; color: #00ff88;
+            text-shadow: 0 0 8px #00ff88; flex-shrink: 0;
+        }
+        .hs-level {
+            font-size: 11px; color: #555; flex-shrink: 0; width: 40px; text-align: right;
+        }
+        .hs-close-btn {
+            margin-top: 8px; padding: 10px 36px; font-size: 15px; font-weight: 900;
+            background: transparent; color: #ff3366; border: 2px solid #ff3366;
+            cursor: pointer; font-family: inherit; letter-spacing: 2px;
+            transition: all 0.15s;
+        }
+        .hs-close-btn:hover { background: rgba(255,51,102,0.15); box-shadow: 0 0 12px #ff3366; }
+        .hs-empty { color: #444; text-align: center; padding: 24px; font-size: 14px; letter-spacing: 2px; }
+
+        /* GAME OVER PANEL */
+        #gameover-panel {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(6,3,15,0.95); z-index: 22;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+        }
+        #gameover-panel.show { opacity: 1; pointer-events: all; }
+        #go-inner {
+            display: flex; flex-direction: column; align-items: center; gap: 18px;
+            background: linear-gradient(160deg, #0d0520, #1a0530);
+            border: 3px solid #ff3366;
+            box-shadow: 0 0 50px rgba(255,51,102,0.4);
+            padding: 36px 48px; min-width: min(380px, 88vw);
+        }
+        #go-title {
+            font-size: 52px; font-weight: 900; color: #ff3366;
+            text-shadow: 0 0 30px #ff3366, 4px 4px 0 #000;
+            letter-spacing: 4px; animation: goFlicker 1.2s ease-in-out infinite;
+        }
+        @keyframes goFlicker {
+            0%,100% { opacity: 1; } 50% { opacity: 0.75; }
+        }
+        #go-player-row {
+            font-size: 22px; font-weight: 900; color: #00ffff;
+            text-shadow: 0 0 12px #00ffff; letter-spacing: 3px;
+        }
+        .go-stat-row { display: flex; gap: 28px; }
+        .go-stat { text-align: center; }
+        .go-stat-label { font-size: 10px; letter-spacing: 3px; color: #555; text-transform: uppercase; }
+        .go-stat-val { font-size: 28px; font-weight: 900; color: #fff; margin-top: 4px; }
+        .go-btn-row { display: flex; gap: 14px; margin-top: 8px; }
+        .go-btn-play {
+            padding: 13px 30px; font-size: 18px; font-weight: 900;
+            background: #ff3366; color: #fff; border: 3px solid #fff;
+            cursor: pointer; font-family: inherit; letter-spacing: 2px;
+            box-shadow: 4px 4px 0 #000; transition: transform 0.1s;
+        }
+        .go-btn-play:hover { transform: scale(1.05); }
+        .go-btn-hs {
+            padding: 13px 30px; font-size: 18px; font-weight: 900;
+            background: transparent; color: #ffcc00; border: 3px solid #ffcc00;
+            cursor: pointer; font-family: inherit; letter-spacing: 2px;
+            transition: all 0.15s;
+        }
+        .go-btn-hs:hover { background: rgba(255,204,0,0.15); box-shadow: 0 0 12px #ffcc00; }
+        #welcome-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #06030f; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 30;
+            overflow: hidden;
+        }
+        #welcome-screen.fade-out {
+            animation: wsFadeOut 0.7s ease-in forwards;
+        }
+        @keyframes wsFadeOut {
+            to { opacity: 0; pointer-events: none; }
+        }
+
+        /* Animated starfield background */
+        #star-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+        }
+
+        .ws-content {
+            position: relative; z-index: 2;
+            display: flex; flex-direction: column; align-items: center; gap: 0;
+        }
+
+        /* LOGO */
+        .logo-wrap {
+            position: relative; margin-bottom: 10px;
+        }
+        .logo-svg {
+            width: min(420px, 88vw);
+            filter: drop-shadow(0 0 30px #ff3366) drop-shadow(0 0 60px #ff336644);
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        @keyframes logoFloat {
+            0%,100% { transform: translateY(0px); filter: drop-shadow(0 0 30px #ff3366) drop-shadow(0 0 60px #ff336644); }
+            50% { transform: translateY(-8px); filter: drop-shadow(0 0 40px #ffcc00) drop-shadow(0 0 80px #ffcc0066); }
+        }
+
+        .logo-tagline {
+            font-size: clamp(11px, 2vw, 14px);
+            letter-spacing: 6px; text-transform: uppercase;
+            color: #00ffff; font-weight: bold; margin-top: 4px;
+            text-shadow: 0 0 10px #00ffff;
+            animation: taglinePulse 2s ease-in-out infinite;
+        }
+        @keyframes taglinePulse {
+            0%,100% { opacity: 0.7; } 50% { opacity: 1; }
+        }
+
+        /* LANG BUTTONS */
+        .lang-row {
+            display: flex; gap: 18px; margin-top: 36px;
+        }
+        .lang-btn {
+            padding: 12px 32px; font-size: 17px; font-weight: 900;
+            border: 3px solid #ffcc00; background: transparent; color: #ffcc00;
+            cursor: pointer; font-family: inherit; letter-spacing: 2px;
+            transition: all 0.18s; position: relative; overflow: hidden;
+            text-transform: uppercase;
+        }
+        .lang-btn::before {
+            content: ''; position: absolute; inset: 0;
+            background: #ffcc00; transform: translateX(-100%);
+            transition: transform 0.18s; z-index: -1;
+        }
+        .lang-btn:hover::before { transform: translateX(0); }
+        .lang-btn:hover { color: #000; box-shadow: 0 0 24px #ffcc00; }
+        .lang-btn.active { background: #ffcc00; color: #000; box-shadow: 0 0 24px #ffcc00; }
+
+        /* START BUTTON */
+        .ws-start-btn {
+            margin-top: 28px; padding: 16px 60px; font-size: 26px; font-weight: 900;
+            background: linear-gradient(135deg, #ff3366, #ffcc00);
+            color: #000; border: none; cursor: pointer; font-family: inherit;
+            letter-spacing: 3px; text-transform: uppercase;
+            box-shadow: 0 0 30px #ff3366, 6px 6px 0 #000;
+            transition: transform 0.1s, box-shadow 0.1s;
+            clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+        }
+        .ws-start-btn:hover {
+            transform: scale(1.06);
+            box-shadow: 0 0 50px #ffcc00, 6px 6px 0 #000;
+        }
+        .ws-start-btn:active { transform: scale(0.97); }
+
+        /* HOW TO PLAY */
+        .how-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 8px 24px; margin-top: 26px;
+            max-width: min(560px, 92vw);
+        }
+        .how-item {
+            font-size: clamp(11px, 1.8vw, 13px); color: #ccc;
+            display: flex; gap: 8px; align-items: flex-start; line-height: 1.4;
+        }
+        .how-item span:first-child { font-size: 16px; flex-shrink: 0; }
+
+        /* CREDITS */
+        .credits-strip {
+            margin-top: 28px; font-size: 11px; color: #444;
+            letter-spacing: 2px; text-align: center; line-height: 1.8;
+        }
+        .credits-strip a { color: #555; text-decoration: none; }
+
+        /* Neon scan line effect */
+        #welcome-screen::after {
+            content: ''; position: absolute; inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+            pointer-events: none; z-index: 1;
+        }
+
+        /* Orb glows */
+        .orb {
+            position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+            animation: orbDrift 8s ease-in-out infinite;
+        }
+        .orb1 { width: 300px; height: 300px; top: -80px; left: -80px;
+            background: radial-gradient(circle, rgba(255,51,102,0.15), transparent 70%);
+            animation-delay: 0s; }
+        .orb2 { width: 250px; height: 250px; bottom: -60px; right: -60px;
+            background: radial-gradient(circle, rgba(0,229,255,0.12), transparent 70%);
+            animation-delay: -4s; }
+        .orb3 { width: 200px; height: 200px; top: 40%; left: 60%;
+            background: radial-gradient(circle, rgba(255,204,0,0.10), transparent 70%);
+            animation-delay: -2s; }
+        @keyframes orbDrift {
+            0%,100% { transform: translate(0,0) scale(1); }
+            33% { transform: translate(20px,-15px) scale(1.05); }
+            66% { transform: translate(-10px,20px) scale(0.95); }
+        }
+
+        /* ===== IN-GAME MENU ===== */
+        #menu-btn {
+            position: absolute; top: 14px; left: 14px; z-index: 15;
+            width: 44px; height: 44px; background: rgba(24,10,43,0.92);
+            border: 2px solid #ff3366; cursor: pointer; padding: 10px 9px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            gap: 0; box-shadow: 0 0 12px rgba(255,51,102,0.4);
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        #menu-btn:hover { border-color: #ffcc00; box-shadow: 0 0 18px rgba(255,204,0,0.5); }
+        #menu-btn span {
+            display: block; height: 2px; background: #ff3366; border-radius: 2px;
+            transition: background 0.2s;
+        }
+        #menu-btn:hover span { background: #ffcc00; }
+        #menu-btn.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        #menu-btn.open span:nth-child(2) { opacity: 0; }
+        #menu-btn.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+        #menu-btn span { transition: transform 0.22s, opacity 0.22s, background 0.2s; }
+
+        /* DRAWER */
+        #menu-backdrop {
+            position: absolute; inset: 0; z-index: 16;
+            background: rgba(0,0,0,0.5); opacity: 0; pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        #menu-backdrop.show { opacity: 1; pointer-events: all; }
+
+        #menu-drawer {
+            position: absolute; top: 0; left: 0; z-index: 17;
+            width: 260px; height: 100%;
+            transform: translateX(-100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+            pointer-events: none;
+        }
+        #menu-drawer.open { transform: translateX(0); pointer-events: all; }
+
+        #menu-drawer-inner {
+            height: 100%; background: linear-gradient(160deg, #0a0318, #16082a);
+            border-right: 2px solid #ff3366;
+            box-shadow: 4px 0 30px rgba(255,51,102,0.25);
+            padding: 70px 0 30px; display: flex; flex-direction: column;
+            gap: 4px; position: relative;
+        }
+
+        .menu-game-title {
+            font-size: 13px; font-weight: 900; letter-spacing: 5px;
+            color: #ff3366; text-align: center; margin-bottom: 16px;
+            text-shadow: 0 0 10px #ff3366;
+        }
+
+        .menu-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 13px 22px; background: transparent; border: none;
+            color: #ddd; cursor: pointer; font-family: 'Courier New', monospace;
+            font-size: 15px; font-weight: 700; letter-spacing: 1px;
+            text-align: left; width: 100%; transition: background 0.15s, color 0.15s;
+            text-transform: uppercase;
+        }
+        .menu-item:hover { background: rgba(255,204,0,0.08); color: #ffcc00; }
+        .menu-item-danger:hover { background: rgba(255,51,102,0.1); color: #ff3366; }
+        .menu-item-vol { flex-wrap: wrap; cursor: default; align-items: flex-start; }
+        .menu-item-vol:hover { background: transparent; color: #ddd; }
+
+        .menu-icon { font-size: 20px; flex-shrink: 0; width: 26px; text-align: center; }
+        .menu-label { flex: 1; }
+
+        .menu-divider {
+            height: 1px; background: rgba(255,51,102,0.2); margin: 8px 22px;
+        }
+
+        /* Volume slider */
+        .vol-slider-wrap {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; padding: 6px 0 0 40px;
+        }
+        .vol-slider {
+            flex: 1; -webkit-appearance: none; height: 4px;
+            background: linear-gradient(to right, #ffcc00 var(--val,15%), #333 var(--val,15%));
+            border-radius: 2px; outline: none; cursor: pointer;
+        }
+        .vol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 16px; height: 16px;
+            background: #ffcc00; border-radius: 50%;
+            box-shadow: 0 0 6px #ffcc00; cursor: pointer;
+        }
+        .vol-val { font-size: 12px; color: #ffcc00; width: 26px; text-align: right; }
+
+        .menu-close-btn {
+            position: absolute; top: 14px; right: 14px;
+            background: none; border: none; color: #555; font-size: 20px;
+            cursor: pointer; font-family: inherit; padding: 4px 8px;
+            transition: color 0.15s;
+        }
+        .menu-close-btn:hover { color: #ff3366; }
+
+        /* PAUSE OVERLAY */
+        #pause-overlay {
+            position: absolute; inset: 0; z-index: 14;
+            background: rgba(6,3,15,0.78);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            backdrop-filter: blur(3px);
+        }
+        #pause-overlay.show { opacity: 1; pointer-events: all; }
+        #pause-inner { text-align: center; }
+        #pause-icon-big {
+            font-size: 72px; line-height: 1;
+            animation: pausePulse 1.4s ease-in-out infinite;
+        }
+        @keyframes pausePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.92)} }
+        #pause-text {
+            font-size: 28px; font-weight: 900; color: #fff;
+            letter-spacing: 6px; margin: 14px 0 24px;
+            text-shadow: 0 0 20px #fff;
+        }
+        #pause-resume-btn {
+            padding: 14px 44px; font-size: 20px; font-weight: 900;
+            background: linear-gradient(135deg, #ff3366, #ffcc00);
+            color: #000; border: none; cursor: pointer; font-family: inherit;
+            letter-spacing: 3px; box-shadow: 0 0 20px #ff3366, 4px 4px 0 #000;
+            transition: transform 0.1s;
+        }
+        #pause-resume-btn:hover { transform: scale(1.06); }
+    </style>
+</head>
+<body>
+    <!-- ===== WELCOME SCREEN ===== -->
+    <div id="welcome-screen">
+        <canvas id="star-canvas"></canvas>
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
+        <div class="orb orb3"></div>
+
+        <div class="ws-content">
+            <!-- LOGO -->
+            <div class="logo-wrap">
+                <svg class="logo-svg" viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#ffcc00"/>
+                            <stop offset="50%" stop-color="#ff3366"/>
+                            <stop offset="100%" stop-color="#00e5ff"/>
+                        </linearGradient>
+                        <linearGradient id="lg2" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#ffffff"/>
+                            <stop offset="100%" stop-color="#ffcc00"/>
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="blur"/>
+                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                        <filter id="glow2">
+                            <feGaussianBlur stdDeviation="6" result="blur"/>
+                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                    </defs>
+
+                    <!-- Slingshot icon left -->
+                    <g transform="translate(22,70)" filter="url(#glow)">
+                        <!-- Handle -->
+                        <rect x="-4" y="10" width="8" height="36" rx="3" fill="#8b5a2b"/>
+                        <!-- Fork left -->
+                        <line x1="-14" y1="-8" x2="-8" y2="12" stroke="#c47a3a" stroke-width="6" stroke-linecap="round"/>
+                        <!-- Fork right -->
+                        <line x1="14" y1="-8" x2="8" y2="12" stroke="#c47a3a" stroke-width="6" stroke-linecap="round"/>
+                        <!-- Band -->
+                        <path d="M -14,-6 Q 0,-2 14,-6" stroke="#e67e22" stroke-width="3" fill="none" stroke-linecap="round"/>
+                        <!-- Ball -->
+                        <circle cx="28" cy="-18" r="9" fill="url(#lg2)" filter="url(#glow)"/>
+                        <circle cx="25" cy="-21" r="3" fill="rgba(255,255,255,0.5)"/>
+                        <!-- Band to ball -->
+                        <line x1="14" y1="-6" x2="22" y2="-16" stroke="#e67e22" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="-14" y1="-6" x2="20" y2="-20" stroke="#e67e22" stroke-width="2.5" stroke-linecap="round"/>
+                    </g>
+
+                    <!-- SLING text -->
+                    <text x="58" y="78" font-family="'Courier New', monospace" font-size="72" font-weight="900"
+                          fill="url(#lg1)" filter="url(#glow2)" letter-spacing="-2">SLING</text>
+
+                    <!-- Thin separator line -->
+                    <rect x="58" y="88" width="200" height="3" rx="1.5" fill="url(#lg1)" opacity="0.6"/>
+
+                    <!-- FIND text smaller -->
+                    <text x="62" y="118" font-family="'Courier New', monospace" font-size="34" font-weight="900"
+                          fill="#ffffff" filter="url(#glow)" letter-spacing="18">FIND</text>
+
+                    <!-- Card icons right side -->
+                    <g transform="translate(360,55)" filter="url(#glow)">
+                        <!-- card 1 -->
+                        <rect x="-22" y="-30" width="38" height="38" rx="4" fill="#1a0a2e" stroke="#ffcc00" stroke-width="2"/>
+                        <text x="-3" y="-7" font-size="20" text-anchor="middle">🍎</text>
+                        <!-- card 2 (overlapping) -->
+                        <rect x="-10" y="-16" width="38" height="38" rx="4" fill="#120822" stroke="#ff3366" stroke-width="2"/>
+                        <text x="9" y="7" font-size="20" text-anchor="middle">🍎</text>
+                        <!-- match spark -->
+                        <circle cx="14" cy="-8" r="4" fill="#00ff88" opacity="0.9"/>
+                        <line x1="14" y1="-16" x2="14" y2="-12" stroke="#00ff88" stroke-width="2"/>
+                        <line x1="22" y1="-8" x2="18" y2="-8" stroke="#00ff88" stroke-width="2"/>
+                        <line x1="20" y1="-14" x2="17" y2="-11" stroke="#00ff88" stroke-width="2"/>
+                    </g>
+                </svg>
+            </div>
+            <div class="logo-tagline" id="ws-tagline">Aim · Bounce · Match</div>
+
+            <!-- Language selector -->
+            <div class="lang-row">
+                <button class="lang-btn active" id="btn-tr" onclick="setLang('tr')">🇹🇷 Türkçe</button>
+                <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 English</button>
+            </div>
+
+            <!-- Name input -->
+            <div class="name-row">
+                <label class="name-label" id="ws-name-label">İSMİN NEDİR?</label>
+                <input class="name-input" id="player-name" type="text" maxlength="16" placeholder="OYUNCU" autocomplete="off" spellcheck="false"/>
+            </div>
+
+            <!-- How to play -->
+            <div class="how-grid" id="ws-howgrid">
+                <div class="how-item"><span>🎯</span><span id="h1">Sapanla at, duvarlardan sektir!</span></div>
+                <div class="how-item"><span>🃏</span><span id="h2">İki aynı kartı eşleştir!</span></div>
+                <div class="how-item"><span>🔥</span><span id="h3">Kombo ile bonus top kazan!</span></div>
+                <div class="how-item"><span>🧠</span><span id="h4">Hafızanı kullan, seviye atla!</span></div>
+            </div>
+
+            <!-- Buttons row -->
+            <div class="ws-btn-row">
+                <button class="ws-start-btn" id="ws-start-btn" onclick="goToGameMenu()">BAŞLA!</button>
+                <button class="ws-hs-btn" id="ws-hs-btn" onclick="showHiScores()">🏆 HI-SCORES</button>
+            </div>
+
+            <!-- Credits -->
+            <div class="credits-strip" id="ws-credits">
+                v1.0 &nbsp;·&nbsp; SLING FIND &nbsp;·&nbsp; 2025<br>
+                <span style="color:#333">Designed with ❤ · All rights reserved</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- HI-SCORE PANEL -->
+    <div id="hs-panel">
+        <div id="hs-inner">
+            <div id="hs-title">🏆 HI-SCORES</div>
+            <div id="hs-list"><div class="hs-loading">Yükleniyor...</div></div>
+            <button class="hs-close-btn" onclick="hideHiScores()">✕ KAPAT</button>
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
+    <canvas id="fly-canvas"></canvas>
+
+    <!-- GAME OVER PANEL -->
+    <div id="gameover-panel">
+        <div id="go-inner">
+            <div id="go-title">GAME OVER</div>
+            <div id="go-player-row"><span id="go-name">-</span></div>
+            <div class="go-stat-row">
+                <div class="go-stat"><div class="go-stat-label">PUAN</div><div class="go-stat-val" id="go-score">0</div></div>
+                <div class="go-stat"><div class="go-stat-label">SEVİYE</div><div class="go-stat-val" id="go-level">1</div></div>
+                <div class="go-stat"><div class="go-stat-label">SIRALAMA</div><div class="go-stat-val" id="go-rank">-</div></div>
+            </div>
+            <div class="go-btn-row">
+                <button class="go-btn-play" onclick="restartGame()">🔄 TEKRAR</button>
+                <button class="go-btn-hs" onclick="showHiScores()">🏆 SKORLAR</button>
+            </div>
+        </div>
+    </div>
+    <div id="ball-bonus-overlay">
+        <div id="ball-bonus-title">🏆 BÖLÜM TAMAMLANDI!</div>
+        <div id="ball-bonus-balls"></div>
+        <div id="ball-bonus-total"></div>
+        <div id="ball-bonus-sub">BONUS PUAN</div>
+    </div>
+    <div id="hud">
+        <div class="hud-item"><div class="hud-label">SEVIYE</div><div class="hud-value" id="level">1</div></div>
+        <div class="hud-item"><div class="hud-label">ESLESMELER</div><div class="hud-value" id="pairs">0/2</div></div>
+        <div class="hud-item"><div class="hud-label">PUAN</div><div class="hud-value" id="score">0</div></div>
+        <div class="hud-item"><div class="hud-label">COMBO</div><div class="hud-value" id="combo" style="color:#ffcc00">1x</div></div>
+        <div class="hud-item"><div class="hud-label">TOPLAR</div><div class="hud-value" id="balls" style="color:#00e5ff">6</div></div>
+    </div>
+
+    <!-- MENU BUTTON -->
+    <button id="menu-btn" onclick="toggleMenu()" title="Menü">
+        <span></span><span></span><span></span>
+    </button>
+
+    <!-- MENU DRAWER -->
+    <div id="menu-drawer">
+        <div id="menu-drawer-inner">
+            <div class="menu-game-title">SLING FIND</div>
+
+            <!-- PAUSE -->
+            <button class="menu-item" id="menu-pause-btn" onclick="togglePause()">
+                <span class="menu-icon">⏸</span>
+                <span class="menu-label" id="pause-label">DURAKLAT</span>
+            </button>
+
+            <!-- SES -->
+            <div class="menu-item menu-item-vol">
+                <span class="menu-icon">🔊</span>
+                <span class="menu-label" id="sound-label">SES</span>
+                <div class="vol-slider-wrap">
+                    <input type="range" id="vol-slider" min="0" max="100" value="15"
+                           oninput="setVolume(this.value)" class="vol-slider"/>
+                    <span class="vol-val" id="vol-val">15</span>
+                </div>
+            </div>
+
+            <!-- SESSIZ -->
+            <button class="menu-item" id="menu-mute-btn" onclick="toggleMute()">
+                <span class="menu-icon" id="mute-icon">🔇</span>
+                <span class="menu-label" id="mute-label">SESSIZ</span>
+            </button>
+
+            <div class="menu-divider"></div>
+
+            <!-- HI-SCORES -->
+            <button class="menu-item" onclick="menuHiScores()">
+                <span class="menu-icon">🏆</span>
+                <span class="menu-label" id="menu-hs-label">HI-SCORES</span>
+            </button>
+
+            <!-- ANA MENÜ -->
+            <button class="menu-item menu-item-danger" onclick="menuGoHome()">
+                <span class="menu-icon">🏠</span>
+                <span class="menu-label" id="menu-home-label">ANA MENÜ</span>
+            </button>
+
+            <!-- ÇIKIŞ -->
+            <button class="menu-item menu-item-danger" onclick="menuQuit()">
+                <span class="menu-icon">🚪</span>
+                <span class="menu-label" id="quit-label">ÇIKIŞ</span>
+            </button>
+
+            <button class="menu-close-btn" onclick="closeMenu()">✕</button>
+        </div>
+    </div>
+    <!-- MENU BACKDROP -->
+    <div id="menu-backdrop" onclick="closeMenu()"></div>
+
+    <!-- PAUSE OVERLAY -->
+    <div id="pause-overlay">
+        <div id="pause-inner">
+            <div id="pause-icon-big">⏸</div>
+            <div id="pause-text">DURAKLATILDI</div>
+            <button id="pause-resume-btn" onclick="togglePause()">▶ DEVAM ET</button>
+        </div>
+    </div>
+    <div id="ticker">HAFIZANI KULLAN!</div>
+    <div id="win-popup">PERFECT!</div>
+    <div id="combo-popup">1x COMBO!</div>
+    <div id="overlay">
+        <h1 id="ov-title">SLING FIND</h1>
+        <p id="ov-p1">🎯 Sapanla at, duvarlardan sek, kartları eşleştir!</p>
+        <p id="ov-p2">🧱 Top duvara değip karta değmezse YOK OLUR!</p>
+        <p id="ov-p3">🃏 Kart vurulunca açılır, top TUZ BUZ olur!</p>
+        <p id="ov-p4">🔥 Combo: 1 duvar=2x, 2 duvar=4x, 3 duvar=6x puan!</p>
+        <p id="ov-p5">🏐 Her seviyede top hakkı = kart sayısının 1.5 katı</p>
+        <button class="btn" id="ov-btn" onclick="startGame()">BAŞLA!</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+        const levelEl = document.getElementById('level');
+        const pairsEl = document.getElementById('pairs');
+        const scoreEl = document.getElementById('score');
+        const tickerEl = document.getElementById('ticker');
+        const winPopup = document.getElementById('win-popup');
+
+        let W, H;
+        let audioCtx = null;
+        function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+        // Master volume control
+        let masterVolume = 0.15;
+
+        function playTone(freq, type, duration, vol=0.1) {
+            if(!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+
+        // 🎵 GELISTIRILMIS SES EFEKTLERI
+
+        // 1. Sapan gerdirme sesi (yukarı doğru zil efekti)
+        function playStretchSound(pullRatio) {
+            if(!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                let filter = audioCtx.createBiquadFilter();
+
+                osc.type = 'sawtooth';
+                // Gerdirme oranına göre frekans artar
+                let baseFreq = 150 + (pullRatio * 400);
+                osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(baseFreq + 100, audioCtx.currentTime + 0.1);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800 + pullRatio * 2000, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.08 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch(e){}
+        }
+
+        // 2. Atis sesi (whoosh + snap)
+        function playShootSound(velocity) {
+            if(!audioCtx) return;
+            try {
+                // Noise buffer for whoosh
+                let bufferSize = audioCtx.sampleRate * 0.3;
+                let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let data = buffer.getChannelData(0);
+                for(let i=0; i<bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/bufferSize, 2);
+                }
+
+                let noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                let noiseGain = audioCtx.createGain();
+                let noiseFilter = audioCtx.createBiquadFilter();
+
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
+                noiseFilter.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.3);
+                noiseFilter.Q.value = 1;
+
+                noiseGain.gain.setValueAtTime(0.2 * masterVolume, audioCtx.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+                noise.start();
+
+                // Snap sound (high freq ping)
+                let snap = audioCtx.createOscillator();
+                let snapGain = audioCtx.createGain();
+                snap.type = 'sine';
+                snap.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                snap.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+                snapGain.gain.setValueAtTime(0.15 * masterVolume, audioCtx.currentTime);
+                snapGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                snap.connect(snapGain);
+                snapGain.connect(audioCtx.destination);
+                snap.start();
+                snap.stop(audioCtx.currentTime + 0.15);
+            } catch(e){}
+        }
+
+        // 3. Duvar sekme sesi (boing/spring)
+        function playBounceSound(bounceCount) {
+            if(!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                let filter = audioCtx.createBiquadFilter();
+
+                // Her sekmeyle birlikte perde yükselir
+                let freq = 200 + (bounceCount * 150);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 0.7, audioCtx.currentTime + 0.12);
+
+                filter.type = 'bandpass';
+                filter.frequency.value = freq;
+                filter.Q.value = 8;
+
+                gain.gain.setValueAtTime(0.12 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+
+                // Ek rezonans
+                setTimeout(() => {
+                    let res = audioCtx.createOscillator();
+                    let resGain = audioCtx.createGain();
+                    res.type = 'sine';
+                    res.frequency.value = freq * 2;
+                    resGain.gain.setValueAtTime(0.05 * masterVolume, audioCtx.currentTime);
+                    resGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.08);
+                    res.connect(resGain);
+                    resGain.connect(audioCtx.destination);
+                    res.start();
+                    res.stop(audioCtx.currentTime + 0.08);
+                }, 30);
+            } catch(e){}
+        }
+
+        // 4. Kart vurma sesi (glass ping)
+        function playCardHitSound() {
+            if(!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                let filter = audioCtx.createBiquadFilter();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.2);
+
+                filter.type = 'highpass';
+                filter.frequency.value = 600;
+
+                gain.gain.setValueAtTime(0.12 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.25);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+
+                // Harmonic overtone
+                let harm = audioCtx.createOscillator();
+                let harmGain = audioCtx.createGain();
+                harm.type = 'sine';
+                harm.frequency.value = 1320;
+                harmGain.gain.setValueAtTime(0.06 * masterVolume, audioCtx.currentTime);
+                harmGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                harm.connect(harmGain);
+                harmGain.connect(audioCtx.destination);
+                harm.start();
+                harm.stop(audioCtx.currentTime + 0.15);
+            } catch(e){}
+        }
+
+        // 5. Eslesme sesi (zafer fanfar)
+        function playMatchSound() {
+            if(!audioCtx) return;
+            try {
+                let notes = [523.25, 659.25, 783.99, 1046.50]; // C major arpeggio
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        let osc = audioCtx.createOscillator();
+                        let gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.12 * masterVolume, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 0.4);
+                    }, i * 100);
+                });
+
+                // Sparkle noise
+                let sparkle = audioCtx.createOscillator();
+                let sparkleGain = audioCtx.createGain();
+                sparkle.type = 'sine';
+                sparkle.frequency.setValueAtTime(2000, audioCtx.currentTime);
+                sparkle.frequency.exponentialRampToValueAtTime(4000, audioCtx.currentTime + 0.5);
+                sparkleGain.gain.setValueAtTime(0.05 * masterVolume, audioCtx.currentTime);
+                sparkleGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                sparkle.connect(sparkleGain);
+                sparkleGain.connect(audioCtx.destination);
+                sparkle.start();
+                sparkle.stop(audioCtx.currentTime + 0.5);
+            } catch(e){}
+        }
+
+        // 6. Yanlis eslesme sesi (buzzer)
+        function playWrongSound() {
+            if(!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+
+                // Second buzz
+                setTimeout(() => {
+                    let osc2 = audioCtx.createOscillator();
+                    let gain2 = audioCtx.createGain();
+                    osc2.type = 'sawtooth';
+                    osc2.frequency.value = 120;
+                    gain2.gain.setValueAtTime(0.08 * masterVolume, audioCtx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.start();
+                    osc2.stop(audioCtx.currentTime + 0.2);
+                }, 150);
+            } catch(e){}
+        }
+
+        // 7. Level clear sesi (büyük zafer)
+        function playLevelClearSound() {
+            if(!audioCtx) return;
+            try {
+                let melody = [523, 659, 783, 1046, 783, 1046, 1318];
+                melody.forEach((freq, i) => {
+                    setTimeout(() => {
+                        let osc = audioCtx.createOscillator();
+                        let gain = audioCtx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.1 * masterVolume, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 0.5);
+                    }, i * 150);
+                });
+
+                // Bass drum
+                setTimeout(() => {
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3 * masterVolume, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }, 900);
+            } catch(e){}
+        }
+
+        // 8. Game over sesi (düşüş)
+        function playGameOverSound() {
+            if(!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 1.0);
+                gain.gain.setValueAtTime(0.15 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 1.0);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.0);
+            } catch(e){}
+        }
+
+        // 9. Bonus top sesi (coin pickup)
+        function playBonusBallSound(count) {
+            if(!audioCtx) return;
+            try {
+                for(let i=0; i<count; i++) {
+                    setTimeout(() => {
+                        let osc = audioCtx.createOscillator();
+                        let gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                        osc.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.1);
+                        gain.gain.setValueAtTime(0.1 * masterVolume, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 0.15);
+                    }, i * 80);
+                }
+            } catch(e){}
+        }
+
+        // 10. Kart acilma sesi (flip)
+        function playCardFlipSound() {
+            if(!audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.06 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } catch(e){}
+        }
+
+        let gameState = 'menu', currentLevel = 1, totalScore = 0;
+        let projectiles = [], cards = [], fxParticles = [];
+        let canShoot = true, levelCleared = false;
+        let matchedPairs = 0, totalPairs = 0;
+        let firstHitCard = null;
+        let revealTimer = 0;
+        let currentCombo = 1;
+        let ballsLeft = 6; // Level 1 default: 4 kart * 1.5 = 6
+        let totalBalls = 6;
+        let shotsFired = 0; // Kac top atildi (hiz bonusu icin)
+
+        const GRAVITY = 0.0;
+        const BOUNCE_DAMPING = 0.92;
+
+        let WALL = { left: 10, right: 0, top: 10, bottom: 0 };
+        let slingshot = { x: 0, y: 0, pullX: 0, pullY: 0, pulling: false, maxPull: 250 };
+
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            WALL.right = W - 10;
+            WALL.bottom = H - 10;
+            slingshot.x = W * 0.15;
+            slingshot.y = H * 0.50;
+            if (!slingshot.pulling) { slingshot.pullX = slingshot.x; slingshot.pullY = slingshot.y; }
+        }
+
+        class FXParticle {
+            constructor(x, y, vx, vy, color, size=4) {
+                this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+                this.color = color; this.size = size; this.alpha = 1; this.decay = 0.04;
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.alpha -= this.decay; }
+            draw() {
+                if(this.alpha <= 0) return;
+                ctx.save(); ctx.globalAlpha = this.alpha;
+                ctx.beginPath(); ctx.fillStyle = this.color;
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class MemoryCard {
+            constructor(x, y, size, icon, pairId) {
+                this.x = x; this.y = y; this.size = size;
+                this.icon = icon; this.pairId = pairId;
+                this.revealed = false; this.matched = false;
+                this.alive = true; this.shake = 0;
+                this.matchScale = 1; this.matchAnim = 0;
+                this.revealTimer = 0; // Yanlis kart icin gosterim suresi
+            }
+            reveal() { this.revealed = true; this.revealTimer = 0; }
+            hide() { this.revealed = false; }
+
+            update() {
+                if (this.shake > 0) { this.shake *= 0.85; if (this.shake < 0.5) this.shake = 0; }
+                if (this.revealTimer > 0) {
+                    this.revealTimer--;
+                    if (this.revealTimer <= 0 && !this.matched) {
+                        this.revealed = false; // Suresi bitince kapan
+                    }
+                }
+                if (this.matched && this.matchAnim < 1) {
+                    this.matchAnim += 0.025;
+                    this.matchScale = 1 + Math.sin(this.matchAnim * Math.PI) * 0.4;
+                    if (this.matchAnim >= 1) this.alive = false;
+                }
+            }
+
+            draw() {
+                if (!this.alive) return;
+                let drawX = this.x + (Math.random()-0.5)*this.shake;
+                ctx.save(); 
+                ctx.translate(drawX, this.y);
+                ctx.scale(this.matchScale, this.matchScale);
+
+                if (this.revealed) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 20;
+                    ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 3;
+                    ctx.strokeRect(-this.size/2, -this.size/2, this.size, this.size);
+
+                    ctx.fillStyle = '#000';
+                    ctx.font = `bold ${this.size * 0.55}px sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(this.icon, 0, 0);
+                } else {
+                    ctx.fillStyle = '#1a0a2e';
+                    ctx.shadowColor = '#ff3366'; ctx.shadowBlur = 10;
+                    ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 3;
+                    ctx.strokeRect(-this.size/2, -this.size/2, this.size, this.size);
+
+                    ctx.fillStyle = '#ff3366';
+                    ctx.font = `bold ${this.size * 0.5}px sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText('?', 0, 0);
+                }
+                ctx.restore();
+            }
+
+            checkHit(px, py) {
+                return px > this.x - this.size/2 && px < this.x + this.size/2 &&
+                       py > this.y - this.size/2 && py < this.y + this.size/2;
+            }
+        }
+
+        class Ball {
+            constructor(x, y, vx, vy) {
+                this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+                this.radius = 9; this.active = true;
+                this.bounces = 0; // Duvar çarpma sayisi
+                this.hitFirstCard = false; // Ilk karti vurdu mu?
+            }
+            update() {
+                if (!this.active) return;
+                this.x += this.vx; this.y += this.vy;
+
+                if (this.x + this.radius > WALL.right) {
+                    this.x = WALL.right - this.radius; this.vx *= -BOUNCE_DAMPING;
+                    this.bounces++;
+                    playBounceSound(this.bounces);
+                }
+                if (this.x - this.radius < WALL.left) {
+                    this.x = WALL.left + this.radius; this.vx *= -BOUNCE_DAMPING;
+                    this.bounces++;
+                    playBounceSound(this.bounces);
+                }
+                if (this.y - this.radius < WALL.top) {
+                    this.y = WALL.top + this.radius; this.vy *= -BOUNCE_DAMPING;
+                    this.bounces++;
+                    playBounceSound(this.bounces);
+                }
+                if (this.y + this.radius > WALL.bottom) {
+                    this.y = WALL.bottom - this.radius; this.vy *= -BOUNCE_DAMPING;
+                    this.bounces++;
+                    playBounceSound(this.bounces);
+                }
+
+                if (this.x < -100 || this.x > W+100 || this.y < -100 || this.y > H+100) {
+                    this.active = false;
+                }
+            }
+            destroy() {
+                this.active = false;
+                for(let i=0; i<20; i++) {
+                    let angle = Math.random() * Math.PI * 2;
+                    let speed = Math.random() * 8 + 3;
+                    let colors = ['#00e5ff', '#ffffff', '#ffcc00', '#ff3366'];
+                    fxParticles.push(new FXParticle(this.x, this.y, 
+                        Math.cos(angle)*speed, Math.sin(angle)*speed, 
+                        colors[Math.floor(Math.random()*colors.length)], 5));
+                }
+            }
+            draw() {
+                if (!this.active) return;
+                ctx.save(); ctx.translate(this.x, this.y);
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+                let grad = ctx.createRadialGradient(-4, -4, 0, 0, 0, this.radius);
+                grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#00e5ff');
+                ctx.fillStyle = grad; ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 15;
+                ctx.beginPath(); ctx.arc(0, 0, this.radius*0.5, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function showTicker(msg) {
+            tickerEl.textContent = msg; tickerEl.style.opacity = 1;
+            setTimeout(() => tickerEl.style.opacity = 0, 2000);
+        }
+
+        // COMBO sistemi
+        function showCombo(combo) {
+            let comboEl = document.getElementById('combo-popup');
+            comboEl.textContent = combo + 'x COMBO!';
+            comboEl.classList.remove('fade');
+            comboEl.classList.add('show');
+
+            // Combo sesi - yukselen ton
+            let baseFreq = 440;
+            for(let i=0; i<combo; i++) {
+                setTimeout(() => {
+                    playTone(baseFreq * (1 + i*0.2), 'square', 0.1, 0.08);
+                }, i * 80);
+            }
+            // Bonus top sesi
+            playBonusBallSound(Math.floor(combo/2));
+
+            // 1.5 saniye sonra kaybol
+            setTimeout(() => {
+                comboEl.classList.remove('show');
+                comboEl.classList.add('fade');
+            }, 1500);
+        }
+
+        function updateComboDisplay() {
+            document.getElementById('combo').textContent = currentCombo + 'x';
+        }
+
+        // DIZILIM SEKILLERI - Her level farkli
+        const LAYOUTS = [
+            { nameKey: 'layoutSquare', type: 'square' },
+            { nameKey: 'layoutPyramid', type: 'pyramid' },
+            { nameKey: 'layoutRect', type: 'rectangle' }
+        ];
+
+        function getLayoutForLevel(level) {
+            return LAYOUTS[(level - 1) % LAYOUTS.length];
+        }
+
+        function calculateCardPositions(count, layoutType) {
+            let positions = [];
+            let areaW = WALL.right - WALL.left - 200; // Sapan icin daha fazla yer
+            let areaH = WALL.bottom - WALL.top - 40;
+            let centerX = WALL.left + areaW * 0.55 + 80;
+            let centerY = WALL.top + areaH * 0.5 + 20;
+
+            // Kart boyutunu hesapla
+            let gap = 12;
+            let cols, rows;
+
+            if (layoutType === 'square') {
+                cols = Math.ceil(Math.sqrt(count));
+                rows = Math.ceil(count / cols);
+            } else if (layoutType === 'pyramid') {
+                // Piramit: 4 kart=2x2, 6 kart=3x2, 8 kart=3+3+2 gibi
+                cols = Math.ceil(count / 2);
+                rows = 2;
+                if (count >= 9) { cols = 3; rows = 3; }
+                if (count >= 12) { cols = 4; rows = 3; }
+                if (count >= 16) { cols = 4; rows = 4; }
+            } else { // rectangle
+                cols = Math.min(Math.ceil(count / 2), 6);
+                rows = Math.ceil(count / cols);
+            }
+
+            let cardSize = Math.min(
+                (areaW - gap * (cols - 1)) / cols,
+                (areaH - gap * (rows - 1)) / rows,
+                60
+            );
+            cardSize = Math.max(cardSize, 36);
+
+            // Grid hesapla
+            let gridW = cols * cardSize + (cols - 1) * gap;
+            let gridH = rows * cardSize + (rows - 1) * gap;
+            let startX = centerX - gridW / 2 + cardSize / 2;
+            let startY = centerY - gridH / 2 + cardSize / 2;
+
+            for (let i = 0; i < count; i++) {
+                let c = i % cols;
+                let r = Math.floor(i / cols);
+                let x = startX + c * (cardSize + gap);
+                let y = startY + r * (cardSize + gap);
+                positions.push({ x, y, size: cardSize });
+            }
+
+            return positions;
+        }
+
+        function initLevel(level) {
+            cards = []; projectiles = []; fxParticles = [];
+            canShoot = true; levelCleared = false;
+            firstHitCard = null; matchedPairs = 0;
+            currentCombo = 1; shotsFired = 0;
+            updateComboDisplay();
+            winPopup.classList.remove('show');
+
+            let layout = getLayoutForLevel(level);
+
+            // Her level +1 cift, max 8 cift (16 kart) - herzaman cift sayi
+            let pairCount = Math.min(2 + (level - 1), 8);
+            totalPairs = pairCount;
+
+            let allIcons = ['🍎','🍌','🍇','🍊','🍓','🍉','🍒','🥝'];
+            let icons = allIcons.slice(0, pairCount);
+            // KESIN KURAL: Her sembolden TAM 2 adet, toplam CIFT sayi kart
+            let cardData = [];
+            icons.forEach((icon, idx) => {
+                cardData.push({ icon, pairId: idx }); // 1. kart
+                cardData.push({ icon, pairId: idx }); // 2. kart (eslesme icin)
+            });
+            // cardData.length herzaman CIFT olur: 4, 6, 8, 10, 12, 14, 16
+
+            // Karistir (kart sayisi CIFT kalir)
+            for (let i = cardData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cardData[i], cardData[j]] = [cardData[j], cardData[i]];
+            }
+            console.log('Level ' + level + ': ' + cardData.length + ' kart, ' + pairCount + ' cift');
+
+            // Pozisyonlari hesapla
+            let positions = calculateCardPositions(cardData.length, layout.type);
+
+            // TUM kartlari yerlestir (hepsi sigacak sekilde hesaplandi)
+            cardData.forEach((data, idx) => {
+                let pos = positions[idx];
+                if (pos) {
+                    cards.push(new MemoryCard(pos.x, pos.y, pos.size, data.icon, data.pairId));
+                }
+            });
+
+            // Top hakki = kart sayisinin 1.5 kati (yuvarlanmis)
+            let cardCount = pairCount * 2;
+            ballsLeft = Math.ceil(cardCount * 1.5);
+            totalBalls = ballsLeft;
+            console.log('Top hakki: ' + ballsLeft + ' (kart: ' + cardCount + ')');
+
+            // 2.5 saniye acik goster (yarisina indirildi)
+            revealTimer = 150;
+            cards.forEach(c => c.reveal());
+            showTicker(t('rememberCards', t(layout.nameKey)));
+
+            updateHUD();
+        }
+
+        function checkCollisions() {
+            for (let pIdx = projectiles.length - 1; pIdx >= 0; pIdx--) {
+                let p = projectiles[pIdx];
+                if (!p.active) continue;
+
+                for (let c of cards) {
+                    if (!c.alive || c.matched) continue;
+
+                    if (c.checkHit(p.x, p.y)) {
+                        p.destroy();
+
+                        if (!c.revealed) {
+                            c.reveal();
+                            playCardHitSound();
+                            playCardFlipSound();
+
+                            if (firstHitCard === null) {
+                                firstHitCard = c;
+                                showTicker(t('cardOpen', c.icon));
+                            } else if (firstHitCard === c) {
+                                showTicker(t('alreadyOpen'));
+                            } else {
+                                if (firstHitCard.pairId === c.pairId) {
+                                    // ✅ EŞLEŞME!
+                                    // Hız bonusu: shotsFired'a göre
+                                    // 1-2 topla → +110 (10+100), 3 → +80 (10+70), 4 → +70 (10+60), 5 → +60... min 10
+                                    let speedBonus = Math.max(0, 110 - Math.max(0, shotsFired - 2) * 10);
+                                    let basePoints = 100;
+                                    let matchPoints = basePoints + speedBonus;
+
+                                    // Combo (duvar sekmesi) çarpanı
+                                    let combo = Math.max(1, (p.bounces + 1) * 2 - 1);
+                                    currentCombo = combo;
+                                    let totalPoints = Math.round(matchPoints * (combo > 1 ? combo * 0.5 + 0.5 : 1));
+
+                                    // Combo bonus: combo/2 tam sayı kadar extra top - uçarak HUD'a git
+                                    let bonusBalls = Math.floor(combo / 2);
+                                    if (bonusBalls > 0) {
+                                        let midX = (firstHitCard.x + c.x) / 2;
+                                        let midY = (firstHitCard.y + c.y) / 2;
+                                        flyBallsToHUD(midX, midY, bonusBalls);
+                                    }
+
+                                    firstHitCard.matched = true;
+                                    c.matched = true;
+                                    matchedPairs++;
+                                    totalScore += totalPoints;
+
+                                    // Hız etiketi
+                                    let speedLabel = shotsFired <= 2 ? t('speedFast') : shotsFired === 3 ? t('speedGood') : '';
+
+                                    // Combo gosterimi
+                                    if (combo > 1) {
+                                        showCombo(combo);
+                                        showTicker(t('comboMatch', combo, totalPoints, bonusBalls));
+                                    } else {
+                                        showTicker(t('matched', c.icon, totalPoints, speedLabel));
+                                    }
+
+                                    // Efektler
+                                    for(let i=0; i<60; i++) {
+                                        let angle = Math.random() * Math.PI * 2;
+                                        let speed = Math.random() * 12 + 4;
+                                        let colors = ['#00ff88', '#ffffff', '#ffcc00', '#00e5ff'];
+                                        let col = colors[Math.floor(Math.random()*colors.length)];
+                                        fxParticles.push(new FXParticle(
+                                            (firstHitCard.x + c.x)/2, (firstHitCard.y + c.y)/2,
+                                            Math.cos(angle)*speed, Math.sin(angle)*speed, col, 5
+                                        ));
+                                    }
+
+                                    // Esleme sesi
+                                    playMatchSound();
+
+                                    firstHitCard = null;
+                                    updateComboDisplay();
+                                    updateHUD();
+                                } else {
+                                    // Yanlış - 1.2 saniye göster, combo reset
+                                    playWrongSound();
+                                    c.shake = 12;
+                                    c.revealTimer = 72;
+                                    currentCombo = 1;
+                                    updateComboDisplay();
+
+                                    showTicker(t('wrong', firstHitCard.icon));
+
+                                    setTimeout(() => { c.shake = 0; }, 400);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        function updateHUD() {
+            levelEl.textContent = currentLevel;
+            scoreEl.textContent = totalScore;
+            pairsEl.textContent = `${matchedPairs}/${totalPairs}`;
+            document.getElementById('balls').textContent = ballsLeft;
+
+            if (revealTimer > 0) {
+                revealTimer--;
+                if (revealTimer === 0) {
+                    cards.forEach(c => { if (!c.matched && c !== firstHitCard) c.hide(); });
+                    showTicker(t('cardsHidden'));
+                }
+            }
+
+            if (matchedPairs >= totalPairs && !levelCleared && gameState === 'playing') {
+                levelCleared = true;
+                playLevelClearSound();
+                // Bölüm sonu: önce bonus top sayımı göster, sonra geç
+                showBallBonus(ballsLeft, () => {
+                    winPopup.innerHTML = t('levelClear');
+                    winPopup.classList.add('show');
+                    setTimeout(() => {
+                        winPopup.classList.remove('show');
+                        currentLevel++;
+                        initLevel(currentLevel);
+                    }, 2500);
+                });
+            }
+
+            // Game over kontrolu - sadece gercekten top 0 ise VE reveal bitince
+            if (ballsLeft === 0 && matchedPairs < totalPairs && !levelCleared && gameState === 'playing' && revealTimer <= 0 && totalPairs > 0) {
+                levelCleared = true;
+                playGameOverSound();
+                // Skoru kaydet, sonra game over ekranı göster
+                saveScore(playerName, totalScore, currentLevel).then(() => {
+                    showGameOver();
+                });
+            }
+        }
+
+        function drawWalls() {
+            ctx.strokeStyle = '#ff3366'; ctx.lineWidth = 4;
+            ctx.shadowColor = '#ff3366'; ctx.shadowBlur = 20;
+            ctx.strokeRect(WALL.left, WALL.top, WALL.right - WALL.left, WALL.bottom - WALL.top);
+            ctx.shadowBlur = 0;
+
+            let corners = [
+                [WALL.left, WALL.top], [WALL.right, WALL.top],
+                [WALL.left, WALL.bottom], [WALL.right, WALL.bottom]
+            ];
+            corners.forEach(([cx, cy]) => {
+                ctx.fillStyle = '#ff3366';
+                ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        function drawSlingshot() {
+            let sx = slingshot.x, sy = slingshot.y;
+            let px = slingshot.pullX, py = slingshot.pullY;
+
+            ctx.save();
+            ctx.fillStyle = '#5e5e5e';
+            ctx.fillRect(sx - 4, sy + 12, 8, 50);
+            ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(sx - 15, sy - 11); ctx.lineTo(sx - 9, sy + 14); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx + 15, sy - 11); ctx.lineTo(sx + 9, sy + 14); ctx.stroke();
+            ctx.restore();
+
+            ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+            if (!slingshot.pulling) {
+                ctx.beginPath(); ctx.moveTo(sx - 15, sy - 8); ctx.quadraticCurveTo(sx, sy - 5, sx + 15, sy - 8); ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.moveTo(sx - 15, sy - 8); ctx.lineTo(px, py); ctx.lineTo(sx + 15, sy - 8); ctx.stroke();
+
+                let dx = sx - px, dy = sy - py;
+                let dist = Math.hypot(dx, dy);
+                if (dist > 10) {
+                    let ratio = dist / slingshot.maxPull;
+                    let velocity = ratio * 45;
+                    let angle = Math.atan2(dy, dx);
+                    let simVx = Math.cos(angle) * velocity;
+                    let simVy = Math.sin(angle) * velocity;
+                    let simX = sx, simY = sy - 8;
+
+                    for (let i = 1; i <= 30; i++) {
+                        simX += simVx * 0.6; simY += simVy * 0.6;
+                        if (simX > WALL.right) { simX = WALL.right; simVx *= -BOUNCE_DAMPING; }
+                        if (simX < WALL.left) { simX = WALL.left; simVx *= -BOUNCE_DAMPING; }
+                        if (simY < WALL.top) { simY = WALL.top; simVy *= -BOUNCE_DAMPING; }
+                        if (simY > WALL.bottom) { simY = WALL.bottom; simVy *= -BOUNCE_DAMPING; }
+
+                        ctx.fillStyle = `rgba(0, 255, 255, ${1 - (i/31)})`;
+                        ctx.beginPath(); ctx.arc(simX, simY, Math.max(1, 5 - i*0.12), 0, Math.PI*2); ctx.fill();
+                    }
+                }
+            }
+        }
+
+        function gameLoop() {
+            ctx.fillStyle = '#05020c'; ctx.fillRect(0, 0, W, H);
+            let grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#05020c'); grad.addColorStop(0.5, '#130826'); grad.addColorStop(1, '#240d3a');
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+
+            drawWalls();
+
+            if (gameState === 'playing' && !isPaused) {
+                // Once kapalilar, sonra aciklar (aciklar ustte)
+                cards.filter(c => !c.revealed && c.alive).forEach(c => { c.update(); c.draw(); });
+                cards.filter(c => c.revealed && c.alive).forEach(c => { c.update(); c.draw(); });
+
+                projectiles.forEach(p => { p.update(); p.draw(); });
+                projectiles = projectiles.filter(p => p.active);
+
+                fxParticles.forEach((f, i) => { f.update(); f.draw(); if(f.alpha <= 0) fxParticles.splice(i, 1); });
+
+                checkCollisions();
+                drawSlingshot();
+                updateHUD();
+            } else if (gameState === 'playing' && isPaused) {
+                // Pause modunda kartları ve sahneyi statik çiz
+                cards.filter(c => !c.revealed && c.alive).forEach(c => c.draw());
+                cards.filter(c => c.revealed && c.alive).forEach(c => c.draw());
+                drawSlingshot();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function getPos(e) {
+            return e.touches && e.touches.length > 0 ? 
+                { x: e.touches[0].clientX, y: e.touches[0].clientY } : 
+                { x: e.clientX, y: e.clientY };
+        }
+
+        function startPull(e) {
+            initAudio();
+            if (!canShoot || gameState !== 'playing' || revealTimer > 0 || isPaused) return;
+            let pos = getPos(e);
+            if (Math.hypot(pos.x - slingshot.x, pos.y - slingshot.y) < 55) {
+                slingshot.pulling = true;
+                slingshot.pullX = pos.x; slingshot.pullY = pos.y;
+                playTone(350, 'sine', 0.05, 0.08);
+            }
+        }
+
+        function movePull(e) {
+            if (!slingshot.pulling) return;
+            let pos = getPos(e);
+
+            // Gerdirme sesi
+            let dx = pos.x - slingshot.x, dy = pos.y - slingshot.y;
+            let dist = Math.hypot(dx, dy);
+            let ratio = Math.min(dist / slingshot.maxPull, 1);
+            if (Math.random() < 0.15) playStretchSound(ratio);
+            if (dist > slingshot.maxPull) {
+                dx = (dx / dist) * slingshot.maxPull;
+                dy = (dy / dist) * slingshot.maxPull;
+            }
+            slingshot.pullX = slingshot.x + dx;
+            slingshot.pullY = slingshot.y + dy;
+        }
+
+        function endPull(e) {
+            if (!slingshot.pulling) return;
+            slingshot.pulling = false;
+            let dx = slingshot.x - slingshot.pullX;
+            let dy = slingshot.y - slingshot.pullY;
+            let dist = Math.hypot(dx, dy);
+
+            if (dist > 10) {
+                let ratio = dist / slingshot.maxPull;
+                let velocity = ratio * 45;
+                let angle = Math.atan2(dy, dx);
+                let vx = Math.cos(angle) * velocity;
+                let vy = Math.sin(angle) * velocity;
+
+                if (ballsLeft > 0 && revealTimer <= 0) {
+                    projectiles.push(new Ball(slingshot.x, slingshot.y - 13, vx, vy));
+                    ballsLeft--;
+                    shotsFired++;
+                    canShoot = false;
+                    playShootSound(velocity);
+                    setTimeout(() => { canShoot = true; }, 800);
+                } else if (ballsLeft <= 0) {
+                    showTicker(t('noBalls'));
+                }
+            }
+            slingshot.pullX = slingshot.x; slingshot.pullY = slingshot.y;
+        }
+
+        window.addEventListener('resize', resize);
+        canvas.addEventListener('mousedown', startPull);
+        canvas.addEventListener('mousemove', movePull);
+        window.addEventListener('mouseup', endPull);
+        canvas.addEventListener('touchstart', startPull, {passive:false});
+        canvas.addEventListener('touchmove', movePull, {passive:false});
+        window.addEventListener('touchend', endPull);
+        let currentLang = 'tr';
+
+        const STRINGS = {
+            tr: {
+                tagline: 'At · Sektir · Eşleştir',
+                h1: 'Sapanla at, duvarlardan sektir!',
+                h2: 'İki aynı kartı eşleştir!',
+                h3: 'Kombo ile bonus top kazan!',
+                h4: 'Hafızanı kullan, seviye atla!',
+                startBtn: 'BAŞLA!',
+                ovTitle: 'SLING FIND',
+                ovP1: '🎯 Sapanla at, duvarlardan sek, kartları eşleştir!',
+                ovP2: '🧱 Top duvara değip karta değmezse YOK OLUR!',
+                ovP3: '🃏 Kart vurulunca açılır, top paramparça olur!',
+                ovP4: '🔥 Combo: 1 duvar=2x, 2 duvar=4x, 3 duvar=6x puan!',
+                ovP5: '🏐 Top hakkı = kart sayısının 1.5 katı',
+                ovBtn: 'BAŞLA!',
+                hudLevel: 'SEVİYE', hudPairs: 'EŞLEŞME', hudScore: 'PUAN', hudCombo: 'COMBO', hudBalls: 'TOPLAR',
+                // layout names
+                layoutSquare: 'KARE', layoutPyramid: 'PİRAMİT', layoutRect: 'DİKDÖRTGEN',
+                // in-game tickers
+                rememberCards: (name) => `${name} - KARTLARI HATIRLA!`,
+                cardsHidden: 'KARTLAR KAPANDI! BAŞLA!',
+                cardOpen: (icon) => `${icon} AÇIK! AYNISINI BUL!`,
+                alreadyOpen: 'ZATEN AÇIK!',
+                matched: (icon, pts, label) => `${icon} EŞLEŞTİ! +${pts} ${label}`,
+                comboMatch: (c, pts, b) => `${c}x COMBO! +${pts} PUAN! +${b} TOP!`,
+                wrong: (icon) => `YANLIŞ! ${icon} ARIYORSUN!`,
+                noBalls: 'TOP HAKKI KALMADI!',
+                speedFast: '⚡ HIZLI!', speedGood: '👍 İYİ',
+                // win / game over
+                levelClear: 'LEVEL<br>CLEAR!',
+                gameover: 'GAME<br>OVER!',
+                bonusTitle: '🏆 BÖLÜM TAMAMLANDI!',
+                bonusSub: 'KALAN TOPLAR = BONUS PUAN (her top +10)',
+                bonusNone: 'Bonus top yok',
+                bonusPts: (n) => `+${n} puan`,
+                // game over panel
+                goScore: 'PUAN', goLevel: 'SEVİYE', goRank: 'SIRALAMA',
+                goRestart: '🔄 TEKRAR', goScores: '🏆 SKORLAR',
+                // menu
+                menuPause: 'DURAKLAT', menuResume: 'DEVAM ET',
+                menuSound: 'SES', menuMute: 'SESSİZ', menuUnmute: 'SESİ AÇ',
+                menuHiScores: 'HI-SCORES', menuHome: 'ANA MENÜ', menuQuit: 'ÇIKIŞ',
+                menuQuitConfirm: 'Oyundan çıkmak istediğinize emin misiniz?',
+                // pause overlay
+                pausedText: 'DURAKLATILDI', pauseResume: '▶ DEVAM ET',
+                // name input
+                namePlaceholder: 'OYUNCU', nameLabel: 'İSMİN NEDİR?',
+                // hi-scores
+                hsTitle: '🏆 EN YÜKSEK PUANLAR', hsLoading: 'Yükleniyor...', hsEmpty: 'Henüz skor yok. İlk sen ol!', hsClose: '✕ KAPAT',
+            },
+            en: {
+                tagline: 'Aim · Bounce · Match',
+                h1: 'Launch with the slingshot, bounce off walls!',
+                h2: 'Match two identical cards!',
+                h3: 'Earn bonus balls with combos!',
+                h4: 'Use your memory, level up!',
+                startBtn: 'PLAY!',
+                ovTitle: 'SLING FIND',
+                ovP1: '🎯 Sling the ball, bounce off walls, match cards!',
+                ovP2: '🧱 Ball dies if it hits a wall without hitting a card!',
+                ovP3: '🃏 Card flips open when hit, ball explodes!',
+                ovP4: '🔥 Combo: 1 wall=2x, 2 walls=4x, 3 walls=6x score!',
+                ovP5: '🏐 Balls per level = 1.5× the number of cards',
+                ovBtn: 'PLAY!',
+                hudLevel: 'LEVEL', hudPairs: 'PAIRS', hudScore: 'SCORE', hudCombo: 'COMBO', hudBalls: 'BALLS',
+                // layout names
+                layoutSquare: 'SQUARE', layoutPyramid: 'PYRAMID', layoutRect: 'RECTANGLE',
+                // in-game tickers
+                rememberCards: (name) => `${name} - MEMORIZE!`,
+                cardsHidden: 'CARDS HIDDEN! GO!',
+                cardOpen: (icon) => `${icon} OPEN! FIND THE MATCH!`,
+                alreadyOpen: 'ALREADY OPEN!',
+                matched: (icon, pts, label) => `${icon} MATCHED! +${pts} ${label}`,
+                comboMatch: (c, pts, b) => `${c}x COMBO! +${pts} PTS! +${b} BALL!`,
+                wrong: (icon) => `WRONG! FIND ${icon}!`,
+                noBalls: 'NO BALLS LEFT!',
+                speedFast: '⚡ FAST!', speedGood: '👍 GOOD',
+                // win / game over
+                levelClear: 'LEVEL<br>CLEAR!',
+                gameover: 'GAME<br>OVER!',
+                bonusTitle: '🏆 LEVEL COMPLETE!',
+                bonusSub: 'REMAINING BALLS = BONUS (×10 pts each)',
+                bonusNone: 'No bonus balls',
+                bonusPts: (n) => `+${n} pts`,
+                // game over panel
+                goScore: 'SCORE', goLevel: 'LEVEL', goRank: 'RANK',
+                goRestart: '🔄 RETRY', goScores: '🏆 SCORES',
+                // menu
+                menuPause: 'PAUSE', menuResume: 'RESUME',
+                menuSound: 'SOUND', menuMute: 'MUTE', menuUnmute: 'UNMUTE',
+                menuHiScores: 'HI-SCORES', menuHome: 'MAIN MENU', menuQuit: 'QUIT',
+                menuQuitConfirm: 'Are you sure you want to quit?',
+                // pause overlay
+                pausedText: 'PAUSED', pauseResume: '▶ RESUME',
+                // name input
+                namePlaceholder: 'PLAYER', nameLabel: 'YOUR NAME?',
+                // hi-scores
+                hsTitle: '🏆 HI-SCORES', hsLoading: 'Loading...', hsEmpty: 'No scores yet. Be the first!', hsClose: '✕ CLOSE',
+            }
+        };
+
+        // Translation helper
+        function t(key, ...args) {
+            const s = STRINGS[currentLang] || STRINGS['tr'];
+            const val = s[key];
+            return typeof val === 'function' ? val(...args) : (val || key);
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            const s = STRINGS[lang];
+            document.getElementById('ws-tagline').textContent = s.tagline;
+            document.getElementById('h1').textContent = s.h1;
+            document.getElementById('h2').textContent = s.h2;
+            document.getElementById('h3').textContent = s.h3;
+            document.getElementById('h4').textContent = s.h4;
+            document.getElementById('ws-start-btn').textContent = s.startBtn;
+            document.getElementById('btn-tr').classList.toggle('active', lang === 'tr');
+            document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+            // Overlay
+            document.getElementById('ov-title').textContent = s.ovTitle;
+            document.getElementById('ov-p1').textContent = s.ovP1;
+            document.getElementById('ov-p2').textContent = s.ovP2;
+            document.getElementById('ov-p3').textContent = s.ovP3;
+            document.getElementById('ov-p4').textContent = s.ovP4;
+            document.getElementById('ov-p5').textContent = s.ovP5;
+            document.getElementById('ov-btn').textContent = s.ovBtn;
+            // HUD labels
+            document.querySelectorAll('.hud-label')[0].textContent = s.hudLevel;
+            document.querySelectorAll('.hud-label')[1].textContent = s.hudPairs;
+            document.querySelectorAll('.hud-label')[2].textContent = s.hudScore;
+            document.querySelectorAll('.hud-label')[3].textContent = s.hudCombo;
+            document.querySelectorAll('.hud-label')[4].textContent = s.hudBalls;
+            // Name input
+            document.getElementById('player-name').placeholder = s.namePlaceholder;
+            document.getElementById('ws-name-label').textContent = s.nameLabel;
+            // game over panel stat labels
+            const statLabels = document.querySelectorAll('.go-stat-label');
+            if (statLabels[0]) statLabels[0].textContent = s.goScore;
+            if (statLabels[1]) statLabels[1].textContent = s.goLevel;
+            if (statLabels[2]) statLabels[2].textContent = s.goRank;
+            // game over buttons
+            document.querySelector('.go-btn-play').textContent = s.goRestart;
+            document.querySelector('.go-btn-hs').textContent = s.goScores;
+            // menu (runs after updateMenuLabels is defined)
+            if (typeof updateMenuLabels === 'function') updateMenuLabels();
+        }
+
+        async function showGameOver() {
+            // Game over overlay göster
+            const goPanel = document.getElementById('gameover-panel');
+            const goScore = document.getElementById('go-score');
+            const goLevel = document.getElementById('go-level');
+            const goName = document.getElementById('go-name');
+            const goRank = document.getElementById('go-rank');
+
+            goScore.textContent = totalScore.toLocaleString();
+            goLevel.textContent = currentLevel;
+            goName.textContent = playerName;
+
+            // stat labels
+            const statLabels = document.querySelectorAll('.go-stat-label');
+            if (statLabels[0]) statLabels[0].textContent = t('goScore');
+            if (statLabels[1]) statLabels[1].textContent = t('goLevel');
+            if (statLabels[2]) statLabels[2].textContent = t('goRank');
+            document.querySelector('.go-btn-play').textContent = t('goRestart');
+            document.querySelector('.go-btn-hs').textContent = t('goScores');
+
+            // Sıralamada kaçıncı olduğunu bul
+            const scores = await loadScores();
+            const myRank = scores.findIndex(s => s.name === playerName && s.score === totalScore);
+            goRank.textContent = myRank >= 0 ? `#${myRank + 1}` : '-';
+
+            goPanel.classList.add('show');
+        }
+
+        function restartGame() {
+            document.getElementById('gameover-panel').classList.remove('show');
+            isPaused = false;
+            document.getElementById('pause-overlay').classList.remove('show');
+            winPopup.style.color = '#ffcc00';
+            currentLevel = 1; totalScore = 0;
+            initLevel(currentLevel);
+        }
+
+        // ===== FIREBASE HI-SCORE SISTEMI =====
+        let playerName = 'OYUNCU';
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyC3QkOPNtLuNYf9zJtG5reUaZx3ikX74U0",
+            authDomain: "slingfind.firebaseapp.com",
+            databaseURL: "https://slingfind-default-rtdb.firebaseio.com",
+            projectId: "slingfind",
+            storageBucket: "slingfind.firebasestorage.app",
+            messagingSenderId: "439781657093",
+            appId: "1:439781657093:web:56205afb0fbc0bb1442a6c"
+        };
+
+        // Firebase SDK'yı CDN'den yükle
+        const fbApp = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        async function saveScore(name, score, level) {
+            try {
+                const key = name.toUpperCase().trim().replace(/[^A-Z0-9_]/g, '_');
+                const ref = db.ref('scores/' + key);
+                const snapshot = await ref.once('value');
+                const existing = snapshot.val();
+
+                // Sadece yeni rekor ise yaz
+                if (!existing || score > existing.score) {
+                    await ref.set({
+                        name: key,
+                        score,
+                        level,
+                        date: Date.now()
+                    });
+                }
+            } catch(e) { console.warn('Score save failed:', e); }
+        }
+
+        async function loadScores() {
+            try {
+                const ref = db.ref('scores').orderByChild('score').limitToLast(50);
+                const snapshot = await ref.once('value');
+                const data = snapshot.val();
+                if (!data) return [];
+                return Object.values(data).sort((a, b) => b.score - a.score);
+            } catch(e) { console.warn('Score load failed:', e); return []; }
+        }
+
+        async function showHiScores() {
+            const panel = document.getElementById('hs-panel');
+            const list = document.getElementById('hs-list');
+            const title = document.getElementById('hs-title');
+            title.textContent = t('hsTitle');
+            list.innerHTML = `<div class="hs-loading">${t('hsLoading')}</div>`;
+            panel.classList.add('show');
+
+            const scores = await loadScores();
+            const myName = (document.getElementById('player-name').value.trim().toUpperCase() || t('namePlaceholder'));
+
+            if (scores.length === 0) {
+                list.innerHTML = `<div class="hs-empty">${t('hsEmpty')}</div>`;
+                return;
+            }
+
+            list.innerHTML = scores.map((s, i) => {
+                let rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+                let rankIcon = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                let isMe = s.name === myName;
+                return `<div class="hs-row">
+                    <div class="hs-rank ${rankClass}">${rankIcon}</div>
+                    <div class="hs-name ${isMe ? 'me' : ''}">${s.name}${isMe ? ' ◀' : ''}</div>
+                    <div class="hs-level">LV${s.level}</div>
+                    <div class="hs-score">${s.score.toLocaleString()}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function hideHiScores() {
+            document.getElementById('hs-panel').classList.remove('show');
+        }
+        function goToGameMenu() {
+            const nameInput = document.getElementById('player-name');
+            playerName = nameInput.value.trim().toUpperCase() || 'OYUNCU';
+            const ws = document.getElementById('welcome-screen');
+            ws.classList.add('fade-out');
+            setTimeout(() => { ws.style.display = 'none'; }, 700);
+        }
+
+        // Starfield animation
+        (function initStars() {
+            const sc = document.getElementById('star-canvas');
+            const sctx = sc.getContext('2d');
+            let stars = [];
+            function resizeStars() {
+                sc.width = window.innerWidth; sc.height = window.innerHeight;
+                stars = Array.from({length: 120}, () => ({
+                    x: Math.random() * sc.width, y: Math.random() * sc.height,
+                    r: Math.random() * 1.5 + 0.3, speed: Math.random() * 0.3 + 0.05,
+                    alpha: Math.random(), dalpha: (Math.random() - 0.5) * 0.02,
+                    color: ['#ffffff','#ffcc00','#00e5ff','#ff3366'][Math.floor(Math.random()*4)]
+                }));
+            }
+            window.addEventListener('resize', resizeStars);
+            resizeStars();
+
+            // Shooting stars
+            let shooters = [];
+            function addShooter() {
+                shooters.push({ x: Math.random()*sc.width*0.5, y: Math.random()*sc.height*0.4,
+                    vx: 4+Math.random()*5, vy: 1+Math.random()*2, life: 1, tail: [] });
+            }
+            setInterval(addShooter, 2200);
+
+            function animStars() {
+                if (!document.getElementById('star-canvas')) return;
+                sctx.clearRect(0, 0, sc.width, sc.height);
+                stars.forEach(s => {
+                    s.alpha += s.dalpha;
+                    if (s.alpha > 1) { s.alpha = 1; s.dalpha *= -1; }
+                    if (s.alpha < 0) { s.alpha = 0; s.dalpha *= -1; }
+                    sctx.beginPath(); sctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+                    sctx.fillStyle = s.color; sctx.globalAlpha = s.alpha; sctx.fill();
+                });
+                shooters.forEach((sh, i) => {
+                    sh.tail.unshift({x: sh.x, y: sh.y});
+                    if (sh.tail.length > 18) sh.tail.pop();
+                    sh.x += sh.vx; sh.y += sh.vy; sh.life -= 0.018;
+                    sh.tail.forEach((pt, ti) => {
+                        let a = sh.life * (1 - ti/sh.tail.length) * 0.8;
+                        sctx.beginPath(); sctx.arc(pt.x, pt.y, 1.5 - ti*0.07, 0, Math.PI*2);
+                        sctx.fillStyle = '#ffffff'; sctx.globalAlpha = Math.max(0,a); sctx.fill();
+                    });
+                    if (sh.life <= 0) shooters.splice(i, 1);
+                });
+                sctx.globalAlpha = 1;
+                requestAnimationFrame(animStars);
+            }
+            animStars();
+        })();
+
+        // ===== UÇAN TOP ANİMASYONU =====
+        const flyCanvas = document.getElementById('fly-canvas');
+        const flyCtx = flyCanvas.getContext('2d');
+        let flyBalls = [];
+        let flyRunning = false;
+
+        function resizeFly() {
+            flyCanvas.width = window.innerWidth;
+            flyCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeFly);
+        resizeFly();
+
+        function flyBallsToHUD(fromX, fromY, count) {
+            const ballsEl = document.getElementById('balls');
+            const rect = ballsEl.getBoundingClientRect();
+            const targetX = rect.left + rect.width / 2;
+            const targetY = rect.top + rect.height / 2;
+
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    let cpX = (fromX + targetX) / 2 + (Math.random() - 0.5) * 100;
+                    let cpY = Math.min(fromY, targetY) - 80 - Math.random() * 80;
+                    flyBalls.push({
+                        sx: fromX, sy: fromY,
+                        tx: targetX, ty: targetY,
+                        cpX, cpY,
+                        t: 0, speed: 0.025 + Math.random() * 0.01,
+                        trail: []
+                    });
+                    if (!flyRunning) { flyRunning = true; animateFly(); }
+                }, i * 200);
+            }
+        }
+
+        function getBezier(sx, sy, cpX, cpY, tx, ty, t) {
+            let mt = 1 - t;
+            return {
+                x: mt*mt*sx + 2*mt*t*cpX + t*t*tx,
+                y: mt*mt*sy + 2*mt*t*cpY + t*t*ty
+            };
+        }
+
+        function animateFly() {
+            flyCtx.clearRect(0, 0, flyCanvas.width, flyCanvas.height);
+            let alive = false;
+
+            flyBalls.forEach(b => {
+                b.t += b.speed;
+                if (b.t > 1) b.t = 1;
+
+                let pos = getBezier(b.sx, b.sy, b.cpX, b.cpY, b.tx, b.ty, b.t);
+                b.trail.push({x: pos.x, y: pos.y});
+                if (b.trail.length > 12) b.trail.shift();
+
+                // Trail
+                b.trail.forEach((pt, ti) => {
+                    let a = (ti / b.trail.length) * 0.6;
+                    let r = 3 * (ti / b.trail.length);
+                    flyCtx.beginPath();
+                    flyCtx.arc(pt.x, pt.y, r, 0, Math.PI*2);
+                    flyCtx.fillStyle = `rgba(0,229,255,${a})`;
+                    flyCtx.fill();
+                });
+
+                // Top
+                let r = 10 * (0.7 + 0.3 * (1 - b.t));
+                let grad = flyCtx.createRadialGradient(pos.x - r*0.3, pos.y - r*0.3, 0, pos.x, pos.y, r);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(1, '#00e5ff');
+                flyCtx.beginPath();
+                flyCtx.arc(pos.x, pos.y, r, 0, Math.PI*2);
+                flyCtx.fillStyle = grad;
+                flyCtx.shadowColor = '#00e5ff'; flyCtx.shadowBlur = 14;
+                flyCtx.fill(); flyCtx.shadowBlur = 0;
+
+                // +1 etiketi
+                flyCtx.fillStyle = '#ffcc00';
+                flyCtx.font = 'bold 12px monospace';
+                flyCtx.textAlign = 'center';
+                flyCtx.fillText('+1 TOP', pos.x, pos.y - r - 5);
+
+                if (b.t >= 1 && !b.landed) {
+                    b.landed = true;
+                    ballsLeft++;
+                    updateHUD();
+                    playTone(900 + flyBalls.indexOf(b) * 40, 'sine', 0.12, 0.08);
+                    // HUD flaş
+                    const ballsEl = document.getElementById('balls');
+                    ballsEl.style.transition = 'transform 0.15s, color 0.15s';
+                    ballsEl.style.transform = 'scale(1.6)';
+                    ballsEl.style.color = '#ffcc00';
+                    setTimeout(() => {
+                        ballsEl.style.transform = 'scale(1)';
+                        ballsEl.style.color = '#00e5ff';
+                    }, 300);
+                }
+
+                if (!b.landed) alive = true;
+            });
+
+            flyBalls = flyBalls.filter(b => !b.landed);
+
+            if (flyBalls.length > 0 || alive) {
+                requestAnimationFrame(animateFly);
+            } else {
+                flyRunning = false;
+                flyCtx.clearRect(0, 0, flyCanvas.width, flyCanvas.height);
+            }
+        }
+
+        // ===== KONFETI =====
+        let confettiPieces = [];
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        let confettiRunning = false;
+
+        function resizeConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeConfetti);
+        resizeConfetti();
+
+        function spawnConfetti() {
+            const colors = ['#ffcc00','#ff3366','#00e5ff','#00ff88','#ffffff','#ff9900','#cc00ff'];
+            for (let i = 0; i < 14; i++) {
+                confettiPieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: -10,
+                    w: 8 + Math.random() * 8,
+                    h: 5 + Math.random() * 5,
+                    r: Math.random() * Math.PI * 2,
+                    dr: (Math.random() - 0.5) * 0.2,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: 2 + Math.random() * 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    alpha: 1
+                });
+            }
+        }
+
+        function animateConfetti() {
+            if (!confettiRunning) {
+                confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+                confettiPieces = [];
+                return;
+            }
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiPieces.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.r += p.dr;
+                if (p.y > confettiCanvas.height) p.alpha -= 0.05;
+                confettiCtx.save();
+                confettiCtx.globalAlpha = Math.max(0, p.alpha);
+                confettiCtx.translate(p.x, p.y);
+                confettiCtx.rotate(p.r);
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                confettiCtx.restore();
+            });
+            confettiPieces = confettiPieces.filter(p => p.alpha > 0);
+            requestAnimationFrame(animateConfetti);
+        }
+
+        function startConfetti() {
+            confettiRunning = true;
+            let spawnCount = 0;
+            let spawnInterval = setInterval(() => {
+                spawnConfetti();
+                spawnCount++;
+                if (spawnCount > 18) clearInterval(spawnInterval);
+            }, 120);
+            animateConfetti();
+        }
+
+        function stopConfetti() {
+            confettiRunning = false;
+        }
+
+        // ===== BONUS TOP SAYIM EKRANI =====
+        function showBallBonus(remainingBalls, onDone) {
+            const overlay = document.getElementById('ball-bonus-overlay');
+            const ballsEl = document.getElementById('ball-bonus-balls');
+            const totalEl = document.getElementById('ball-bonus-total');
+            const titleEl = document.getElementById('ball-bonus-title');
+            const subEl = document.getElementById('ball-bonus-sub');
+
+            titleEl.textContent = t('bonusTitle');
+            subEl.textContent = t('bonusSub');
+
+            ballsEl.innerHTML = '';
+            totalEl.textContent = '';
+            overlay.classList.add('show');
+
+            if (remainingBalls === 0) {
+                totalEl.style.color = '#888';
+                totalEl.textContent = t('bonusNone');
+                setTimeout(() => { overlay.classList.remove('show'); onDone(); }, 1800);
+                return;
+            }
+
+            // Top + puan etiketi çiftleri oluştur
+            let ballEls = [];
+            let ptsEls = [];
+            let displayCount = Math.min(remainingBalls, 16);
+
+            for (let i = 0; i < displayCount; i++) {
+                let wrap = document.createElement('div');
+                wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
+
+                let b = document.createElement('div');
+                b.className = 'bb-ball';
+                b.textContent = '🏐';
+                wrap.appendChild(b);
+
+                let pts = document.createElement('div');
+                pts.className = 'bb-pts';
+                pts.textContent = '+10';
+                wrap.appendChild(pts);
+
+                ballsEl.appendChild(wrap);
+                ballEls.push(b);
+                ptsEls.push(pts);
+            }
+            if (remainingBalls > 16) {
+                let wrap = document.createElement('div');
+                wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
+                let b = document.createElement('div');
+                b.className = 'bb-ball';
+                b.style.fontSize = '12px';
+                b.textContent = '+' + (remainingBalls - 16);
+                wrap.appendChild(b);
+                ballsEl.appendChild(wrap);
+                ballEls.push(b);
+                ptsEls.push(null);
+            }
+
+            // Önce hepsini pop et
+            let popIdx = 0;
+            let popInt = setInterval(() => {
+                if (popIdx < ballEls.length) {
+                    ballEls[popIdx].classList.add('pop');
+                    popIdx++;
+                    playTone(500 + popIdx * 25, 'sine', 0.1, 0.05);
+                } else {
+                    clearInterval(popInt);
+                    setTimeout(() => countBalls(ballEls, ptsEls, remainingBalls, onDone), 300);
+                }
+            }, 70);
+        }
+
+        function countBalls(ballEls, ptsEls, remainingBalls, onDone) {
+            const totalEl = document.getElementById('ball-bonus-total');
+            const overlay = document.getElementById('ball-bonus-overlay');
+            let counted = 0;
+            let bonusTotal = 0;
+
+            startConfetti();
+
+            let countInt = setInterval(() => {
+                if (counted >= remainingBalls) {
+                    clearInterval(countInt);
+                    totalScore += bonusTotal;
+                    updateHUD();
+                    playLevelClearSound();
+                    setTimeout(() => {
+                        stopConfetti();
+                        overlay.classList.remove('show');
+                        onDone();
+                    }, 1800);
+                    return;
+                }
+
+                // Top sarıya dön + puan etiketi göster
+                if (counted < ballEls.length) {
+                    ballEls[counted].classList.add('counted');
+                    if (ptsEls[counted]) ptsEls[counted].classList.add('show');
+                }
+
+                counted++;
+                bonusTotal += 10;
+                playTone(380 + counted * 18, 'triangle', 0.08, 0.05);
+
+                totalEl.style.color = '#00ff88';
+                totalEl.textContent = t('bonusPts', bonusTotal);
+            }, 180);
+        }
+
+        function startGame() {
+            initAudio();
+            overlay.classList.add('hidden');
+            gameState = 'playing';
+            isPaused = false;
+            document.getElementById('pause-overlay').classList.remove('show');
+            currentLevel = 1; totalScore = 0;
+            initLevel(currentLevel);
+        }
+
+        // ===== IN-GAME MENU =====
+        let menuOpen = false;
+        let isPaused = false;
+        let isMuted = false;
+        let savedVolume = 15;
+
+        function toggleMenu() {
+            menuOpen ? closeMenu() : openMenu();
+        }
+
+        function openMenu() {
+            menuOpen = true;
+            document.getElementById('menu-btn').classList.add('open');
+            document.getElementById('menu-drawer').classList.add('open');
+            document.getElementById('menu-backdrop').classList.add('show');
+            // Dil bazlı etiketleri güncelle
+            updateMenuLabels();
+        }
+
+        function closeMenu() {
+            menuOpen = false;
+            document.getElementById('menu-btn').classList.remove('open');
+            document.getElementById('menu-drawer').classList.remove('open');
+            document.getElementById('menu-backdrop').classList.remove('show');
+        }
+
+        function updateMenuLabels() {
+            document.getElementById('pause-label').textContent = isPaused ? t('menuResume') : t('menuPause');
+            document.getElementById('menu-pause-btn').querySelector('.menu-icon').textContent = isPaused ? '▶' : '⏸';
+            document.getElementById('mute-label').textContent = isMuted ? t('menuUnmute') : t('menuMute');
+            document.getElementById('mute-icon').textContent = isMuted ? '🔊' : '🔇';
+            document.getElementById('quit-label').textContent = t('menuQuit');
+            document.getElementById('sound-label').textContent = t('menuSound');
+            document.getElementById('menu-hs-label').textContent = t('menuHiScores');
+            document.getElementById('menu-home-label').textContent = t('menuHome');
+        }
+
+        function togglePause() {
+            if (gameState !== 'playing') return;
+            isPaused = !isPaused;
+            const po = document.getElementById('pause-overlay');
+            if (isPaused) {
+                po.classList.add('show');
+                document.getElementById('pause-text').textContent = t('pausedText');
+                document.getElementById('pause-resume-btn').textContent = t('pauseResume');
+            } else {
+                po.classList.remove('show');
+            }
+            updateMenuLabels();
+            closeMenu();
+        }
+
+        function setVolume(val) {
+            val = parseInt(val);
+            masterVolume = val / 100;
+            savedVolume = val;
+            document.getElementById('vol-val').textContent = val;
+            // Slider gradient güncellemesi
+            const slider = document.getElementById('vol-slider');
+            slider.style.background = `linear-gradient(to right, #ffcc00 ${val}%, #333 ${val}%)`;
+            if (isMuted && val > 0) { isMuted = false; updateMenuLabels(); }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            if (isMuted) {
+                savedVolume = parseInt(document.getElementById('vol-slider').value);
+                masterVolume = 0;
+                document.getElementById('vol-slider').value = 0;
+                setVolume(0);
+            } else {
+                document.getElementById('vol-slider').value = savedVolume;
+                setVolume(savedVolume);
+            }
+            updateMenuLabels();
+        }
+
+        function menuHiScores() {
+            closeMenu();
+            showHiScores();
+        }
+
+        function menuGoHome() {
+            closeMenu();
+            if (isPaused) { isPaused = false; document.getElementById('pause-overlay').classList.remove('show'); }
+            gameState = 'menu';
+            // Welcome ekranı tekrar göster
+            const ws = document.getElementById('welcome-screen');
+            ws.style.display = 'flex';
+            ws.style.opacity = '1';
+            ws.classList.remove('fade-out');
+        }
+
+        function menuQuit() {
+            if (confirm(t('menuQuitConfirm'))) { window.close(); history.back(); }
+        }
+
+        // ESC ile pause toggle
+        window.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                if (menuOpen) closeMenu();
+                else if (gameState === 'playing') togglePause();
+            }
+        });
+
+        resize();
+        gameLoop();
+        // Slider başlangıç gradient
+        setVolume(15);
+
+        // Service Worker kaydet (PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>
