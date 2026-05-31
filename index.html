@@ -4725,7 +4725,11 @@
             if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
             document.getElementById('demo-screen').style.display = 'none';
             if (demoNoShow) { try { localStorage.setItem(DEMO_KEY, '1'); } catch(e){} }
-            // Overlay yerine direkt startGame çağır
+            // Welcome screen'i gizle
+            const ws = document.getElementById('welcome-screen');
+            ws.style.display = 'none';
+            ws.style.opacity = '0';
+            // Direkt oyunu başlat
             initAudio();
             startGame();
         }
