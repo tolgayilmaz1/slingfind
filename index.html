@@ -810,6 +810,70 @@
             font-size: 72px; line-height: 1;
             animation: pausePulse 1.4s ease-in-out infinite;
         }
+
+        /* ===== DEMO ===== */
+        #demo-screen {
+            position: fixed; inset: 0; z-index: 200;
+            background: #04010a; display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        #demo-canvas {
+            position: absolute; inset: 0;
+            width: 100% !important; height: 100% !important;
+            touch-action: none;
+        }
+        #demo-skip-btn {
+            position: fixed; right: 16px; bottom: 64px;
+            background: rgba(6,3,15,0.9); border: 2px solid #ffcc00;
+            color: #ffcc00; font-size: 13px; font-weight: 900;
+            padding: 10px 20px; cursor: pointer; font-family: inherit;
+            letter-spacing: 2px; z-index: 201; transition: all 0.2s;
+        }
+        #demo-skip-btn:hover { background: rgba(255,204,0,0.15); }
+        #demo-no-show-wrap {
+            position: fixed; right: 12px; bottom: 20px;
+            display: flex; align-items: center; gap: 8px; z-index: 201;
+            cursor: pointer;
+        }
+        #demo-no-show-cb {
+            width: 16px; height: 16px; accent-color: #ffcc00; cursor: pointer;
+        }
+        #demo-no-show-label {
+            font-size: 12px; color: #aaa; font-family: monospace;
+            letter-spacing: 1px; cursor: pointer; user-select: none;
+        }
+        #demo-dots {
+            position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; z-index: 201;
+        }
+        .demo-dot { width: 8px; height: 8px; border-radius: 50%; background: #333; transition: background 0.3s; }
+        .demo-dot.active { background: #ffcc00; box-shadow: 0 0 6px #ffcc00; }
+        @keyframes fireMatchAnim {
+            0%   { opacity:0; transform:translate(-50%,-50%) scale(0.4); }
+            20%  { opacity:1; transform:translate(-50%,-50%) scale(1.15); }
+            80%  { opacity:1; transform:translate(-50%,-50%) scale(1); }
+            100% { opacity:0; transform:translate(-50%,-50%) scale(0.9); }
+        }
+        @keyframes perfectAnim {
+            0%   { opacity:0; transform:translate(-50%,-60%) scale(0.3) rotate(-8deg); }
+            20%  { opacity:1; transform:translate(-50%,-60%) scale(1.2) rotate(3deg); }
+            70%  { opacity:1; transform:translate(-50%,-60%) scale(1) rotate(0deg); }
+            100% { opacity:0; transform:translate(-50%,-60%) scale(0.95); }
+        }
+
+
+        @keyframes perfectAnim {
+            0%   { opacity:0; transform:translate(-50%,-50%) scale(0.3) rotate(-8deg); }
+            20%  { opacity:1; transform:translate(-50%,-50%) scale(1.2) rotate(3deg); }
+            70%  { opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0deg); }
+            100% { opacity:0; transform:translate(-50%,-50%) scale(0.9); }
+        }
+        @keyframes fireBonusAnim {
+            0%   { opacity:0; transform:translateX(-50%) translateY(20px) scale(0.5); }
+            20%  { opacity:1; transform:translateX(-50%) translateY(0) scale(1.1); }
+            75%  { opacity:1; transform:translateX(-50%) translateY(-10px) scale(1); }
+            100% { opacity:0; transform:translateX(-50%) translateY(-30px); }
+        }
         @keyframes surpriseAnim {
             0% { opacity:0; transform:translate(-50%,-50%) scale(0.5); }
             15% { opacity:1; transform:translate(-50%,-50%) scale(1.1); }
@@ -834,7 +898,7 @@
 </head>
 <body>
     <!-- ===== WELCOME SCREEN ===== -->
-    <div id="welcome-screen">
+    <div id="welcome-screen" style="display:none;">
         <canvas id="star-canvas"></canvas>
         <div class="orb orb1"></div>
         <div class="orb orb2"></div>
@@ -1085,6 +1149,24 @@
                 </div>
                 <div id="admin-success"></div>
             </div>
+        </div>
+    </div>
+
+
+    <!-- DEMO -->
+    <div id="demo-screen">
+        <canvas id="demo-canvas"></canvas>
+        <button id="demo-skip-btn" onclick="skipDemo()">SKIP ▶</button>
+        <div id="demo-no-show-wrap">
+            <input type="checkbox" id="demo-no-show-cb" onchange="onDemoNoShow(this.checked)"/>
+            <label id="demo-no-show-label" for="demo-no-show-cb">Bir daha gösterme</label>
+        </div>
+        <div id="demo-dots">
+            <div class="demo-dot active" id="ddot-0"></div>
+            <div class="demo-dot" id="ddot-1"></div>
+            <div class="demo-dot" id="ddot-2"></div>
+            <div class="demo-dot" id="ddot-3"></div>
+            <div class="demo-dot" id="ddot-4"></div>
         </div>
     </div>
 
@@ -1659,10 +1741,13 @@
         }
 
         let gameState = 'menu', currentLevel = 1, totalScore = 0;
+        let perfectLevel = true; // hiç top kaybı yoksa true
+        let pendingPerfectBalls = 0; // sonraki level'a eklenecek
         let projectiles = [], cards = [], fxParticles = [];
         let canShoot = true, levelCleared = false;
         let matchedPairs = 0, totalPairs = 0;
         let firstHitCard = null;
+        let firstHitCardFireRatio = 0;
         let revealTimer = 0;
         let currentCombo = 1;
         let ballsLeft = 6; // Level 1 default: 4 kart * 1.5 = 6
@@ -3250,10 +3335,12 @@
                 if (this.x < -100 || this.x > W+100 || this.y < -100 || this.y > H+100) {
                     this.active = false;
                 }
+
             }
 
             _onWallBounce() {
                 this.bounces++;
+                this.totalWallBounces++;
                 // Hızlandır
                 this.speedMult *= 1.1;
                 let speed = Math.hypot(this.vx, this.vy);
@@ -3271,6 +3358,7 @@
             }
 
             destroy() {
+                if (!this._hitCard) perfectLevel = false; // Karta değmeden yok oldu
                 this.active = false;
                 let fireRatio = this.getFireRatio();
                 let colors = fireRatio > 0.5
@@ -3417,6 +3505,7 @@
 
         function initLevel(level) {
             cards = []; projectiles = []; fxParticles = []; fruitParticles = []; burnParticles = [];
+            perfectLevel = true;
             window._fadingForGameOver = false; _pendingBonusBalls = 0;
             initBgTheme(level, W, H);
             initHazards(level, W, H);
@@ -3545,6 +3634,7 @@
 
                             if (firstHitCard === null) {
                                 firstHitCard = c;
+                                firstHitCardFireRatio = p.getFireRatio ? p.getFireRatio() : 0;
                                 showTicker(t('cardOpen', c.icon));
                             } else if (firstHitCard === c) {
                                 showTicker(t('alreadyOpen'));
@@ -3561,6 +3651,20 @@
                                     let combo = Math.max(1, (p.bounces + 1) * 2 - 1);
                                     currentCombo = combo;
                                     let totalPoints = Math.round(matchPoints * (combo > 1 ? combo * 0.5 + 0.5 : 1));
+
+                                    // 🔥 Ateş topu bonusu
+                                    let ballFireRatio2 = p.getFireRatio ? p.getFireRatio() : 0;
+                                    let fireBonus = 0;
+                                    let fireBonusText = '';
+                                    if (firstHitCardFireRatio > 0 || ballFireRatio2 > 0) {
+                                        let avgFire = (firstHitCardFireRatio + ballFireRatio2) / 2;
+                                        if (avgFire > 0) {
+                                            fireBonus = Math.round(150 + avgFire * 150); // 150-300 arası
+                                            totalPoints += fireBonus;
+                                            fireBonusText = '🔥 ' + (currentLang==='tr'?'Yanan Top Bonusu':'Fire Ball Bonus') + ' +' + fireBonus;
+                                        }
+                                    }
+                                    firstHitCardFireRatio = 0;
 
                                     // Combo bonus: combo/2 tam sayı kadar extra top - uçarak HUD'a git
                                     let bonusBalls = Math.floor(combo / 2);
@@ -3584,6 +3688,11 @@
                                         showTicker(t('comboMatch', combo, totalPoints, bonusBalls));
                                     } else {
                                         showTicker(t('matched', c.icon, totalPoints, speedLabel));
+                                    }
+
+                                    // Ateş topu bonus mesajı
+                                    if (fireBonus > 0) {
+                                        setTimeout(() => showFireBonusPopup(fireBonusText), 400);
                                     }
 
                                     // Ateş topu ile eşleşme kontrolü
@@ -3651,7 +3760,12 @@
             if (matchedPairs >= totalPairs && !levelCleared && gameState === 'playing') {
                 levelCleared = true;
                 playLevelClearSound();
-                // Bölüm sonu: önce bonus top sayımı göster, sonra geç
+                // PERFECT kontrolü
+                if (perfectLevel) {
+                    pendingPerfectBalls = 2;
+                    totalScore += 100;
+                    setTimeout(() => showPerfectPopup(), 300);
+                }
                 showBallBonus(ballsLeft, () => {
                     winPopup.innerHTML = t('levelClear');
                     winPopup.classList.add('show');
@@ -4536,14 +4650,79 @@
         }
 
         function launchGame() {
-            stopMenuMusic(() => {
-                const ws = document.getElementById('welcome-screen');
-                ws.classList.add('fade-out');
-                setTimeout(() => {
-                    ws.style.display = 'none';
-                    overlay.classList.remove('hidden');
-                }, 700);
-            });
+            const ws = document.getElementById('welcome-screen');
+            ws.classList.add('fade-out');
+            // Müziği durdur (callback garantisi için try/catch)
+            try { stopMenuMusic(); } catch(e) {}
+            setTimeout(() => {
+                ws.style.display = 'none';
+                try {
+                    if (!localStorage.getItem(DEMO_KEY)) {
+                        showDemoThenGame();
+                    } else {
+                        overlay.classList.remove('hidden');
+                    }
+                } catch(e) { overlay.classList.remove('hidden'); }
+            }, 700);
+        }
+
+        function showDemoThenGame() {
+            demoRunning = true; demoPhase = 0; demoT = 0; demoNoShow = false;
+            const screen = document.getElementById('demo-screen');
+            screen.style.display = 'flex';
+            demoCanvas = document.getElementById('demo-canvas');
+            demoCtx = demoCanvas.getContext('2d');
+            demoW = demoCanvas.width = window.innerWidth;
+            demoH = demoCanvas.height = window.innerHeight;
+            const lbl = document.getElementById('demo-no-show-label');
+            if (lbl) lbl.textContent = getDT().noShowTxt;
+            // Override endDemo to go to overlay
+            demoD._afterDemo = () => { overlay.classList.remove('hidden'); };
+            startDemoPhase(0);
+            requestAnimationFrame(demoLoop2);
+        }
+
+        function demoLoop2() {
+            if (!demoRunning) return;
+            demoAnimId = requestAnimationFrame(demoLoop2);
+            demoT++;
+            let D=demoD, W=demoW, H=demoH;
+            if (!D) return;
+            if (demoT > D.phaseDur) {
+                if (demoPhase < 4) { startDemoPhase(demoPhase+1); return; }
+                else { endDemoToGame(); return; }
+            }
+            D.fAlpha=Math.max(0,D.fAlpha-.013); D.comboAlpha=Math.max(0,D.comboAlpha-.018);
+            let bg=demoCtx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#04010a'); bg.addColorStop(1,'#0f0520');
+            demoCtx.fillStyle=bg; demoCtx.fillRect(0,0,W,H);
+            demoCtx.strokeStyle='#ff3366'; demoCtx.lineWidth=3; demoCtx.shadowColor='#ff3366'; demoCtx.shadowBlur=14;
+            demoCtx.strokeRect(D.wall.l,D.wall.t,D.wall.r-D.wall.l,D.wall.b-D.wall.t); demoCtx.shadowBlur=0;
+            if(demoPhase===0)dp0(D,W,H,D.wall); else if(demoPhase===1)dp1(D,W,H,D.wall);
+            else if(demoPhase===2)dp2(D,W,H,D.wall); else if(demoPhase===3)dp3(D,W,H,D.wall);
+            else if(demoPhase===4)dp4(D,W,H,D.wall);
+            D.cards.forEach(c=>demoDrawCard(c));
+            demoDrawSling(D.sx,D.sy,D.pullX,D.pullY);
+            if(D.bActive)demoDrawBall(D.bx,D.by,D.bFire);
+            else if(D.pullPhase==='pull')demoDrawBall(D.pullX,D.pullY,0);
+            if(D.arrowAlpha>0){demoDrawArrow(D.ax1,D.ay1,D.ax2,D.ay2,D.arrowColor,D.arrowAlpha);D.arrowAlpha=Math.max(0,D.arrowAlpha-.01);}
+            if(D.comboAlpha>0)demoDrawBigText(D.comboText,W/2,H*.31,'#ffcc00',D.comboAlpha);
+            if(D.fAlpha>0)demoDrawBigText(D.fText,D.fX,D.fY,D.fColor,D.fAlpha);
+            demoCtx.save(); demoCtx.fillStyle='rgba(18,6,36,0.95)'; demoCtx.fillRect(0,0,W,H*.095);
+            demoCtx.font='bold '+Math.round(H*.024)+'px monospace'; demoCtx.fillStyle='#ffcc00'; demoCtx.textAlign='center'; demoCtx.shadowColor='#ffcc00'; demoCtx.shadowBlur=8;
+            demoCtx.fillText('🎮  DEMO  🎮',W/2,H*.06); demoCtx.restore();
+            let step=demoPhase, dt=getDT();
+            demoDrawBottomPanel(dt.titles[step],dt.subs[step],['#00e5ff','#ffcc00','#ff3366','#00ff88','#ff9900'][step]);
+        }
+
+        function skipDemo() { endDemoToGame(); }
+
+        function endDemoToGame() {
+            demoRunning = false;
+            if (demoAnimId) cancelAnimationFrame(demoAnimId);
+            document.getElementById('demo-screen').style.display='none';
+            if (demoNoShow) { try { localStorage.setItem(DEMO_KEY,'1'); } catch(e){} }
+            if (demoD && demoD._afterDemo) demoD._afterDemo();
+            else overlay.classList.remove('hidden');
         }
 
         // Starfield animation
@@ -5246,6 +5425,599 @@
             try { localStorage.setItem('slingfind_settings', JSON.stringify(gameSettings)); } catch(e){}
         }
 
+
+        // ══════════ DEMO SİSTEMİ ══════════
+        const DEMO_KEY = 'slingfind_demo_seen';
+        let demoRunning = false, demoAnimId = null;
+        let demoCanvas, demoCtx, demoW, demoH;
+        let demoPhase = 0, demoT = 0, demoD = {};
+        let demoNoShow = false;
+
+        // Demo metinleri 10 dilde
+        const DEMO_TEXTS = {
+            tr: {
+                titles: ['🎯 SAPANI GEREREK TOP FIRLATIYORSUN!','🧱 DUVARA SEKTIR — COMBO KAZAN!','🃏 KARTA DEĞ — İKONU HATIRLA!','✅ AYNI İKONU BUL, EŞLEŞTİR!','🏆 TÜM KARTLARI EŞLEŞTİR!'],
+                subs: ['Parmağını sapana koy, geri çek ve bırak','Her duvar = daha fazla puan! Top kızarır!','Hangi kartta hangi ikon var — aklında tut!','Eşini bul, vur — +PUAN +BONUS TOP!','Hazır mısın? BAŞLA!'],
+                pullTxt:'GERİ ÇEK...', releaseTxt:'BIRAK! 🔥', firedTxt:'TOP FIRLADI!',
+                comboPrefix:'x COMBO!', rememberTxt:'HATIRLA!', wrongIcon:'❌ FARKLI İKON!',
+                wrongSub:'FARKLI İKONLAR EŞLEŞMEDİ!', findSame:'AYNI İKONU BUL! 👉',
+                matched:'✅ EŞLEŞTİ! +PUAN!', bonusBall:'+1 🏐 BONUS TOP!',
+                readyTxt:'Hazır mısın? Hadi BAŞLA!', skipHint:'👇 sag alttaki SKIP ile ilerle',
+                noShowTxt:'Bir daha gösterme', goingCard:'KARTA GİDİYOR!', wallHit:'DUVARA ÇARPTI!',
+                fireWarning:'🔥 TOP KIZARIYOR — TEHLİKELİ!', whatIs:'BU NE?', release:'BIRAK!'
+            },
+            en: {
+                titles:['🎯 PULL & LAUNCH THE SLINGSHOT!','🧱 BOUNCE OFF WALLS — EARN COMBOS!','🃏 HIT A CARD — REMEMBER THE ICON!','✅ FIND THE MATCH, HIT IT!','🏆 MATCH ALL CARDS TO WIN!'],
+                subs:['Put your finger on the sling, pull back and release','More walls = more points! Ball turns red!','Which icon is on which card — memorize it!','Find the same icon, hit it — +SCORE +BONUS BALL!','Ready? PLAY!'],
+                pullTxt:'PULL BACK...', releaseTxt:'RELEASE! 🔥', firedTxt:'BALL LAUNCHED!',
+                comboPrefix:'x COMBO!', rememberTxt:'REMEMBER!', wrongIcon:'❌ DIFFERENT ICON!',
+                wrongSub:'DIFFERENT ICONS DON\'T MATCH!', findSame:'FIND THE SAME ICON! 👉',
+                matched:'✅ MATCHED! +SCORE!', bonusBall:'+1 🏐 BONUS BALL!',
+                readyTxt:'Ready? Let\'s PLAY!', skipHint:'👇 tap SKIP below',
+                noShowTxt:'Don\'t show again', goingCard:'HEADING TO CARD!', wallHit:'BOUNCED!',
+                fireWarning:'🔥 BALL HEATING UP — DANGER!', whatIs:'WHAT\'S THIS?', release:'RELEASE!'
+            },
+            de: {
+                titles:['🎯 SCHLEUDER ZURÜCKZIEHEN & ABFEUERN!','🧱 ABPRALLEN — KOMBOS VERDIENEN!','🃏 KARTE TREFFEN — SYMBOL MERKEN!','✅ GLEICHES SYMBOL FINDEN!','🏆 ALLE KARTEN ZUORDNEN!'],
+                subs:['Finger auf Schleuder, zurückziehen, loslassen','Mehr Wände = mehr Punkte! Ball rötet sich!','Welches Symbol auf welcher Karte — merken!','Gleiches Symbol finden, treffen — +PUNKTE!','Bereit? LOS!'],
+                pullTxt:'ZURÜCKZIEHEN...', releaseTxt:'LOSLASSEN! 🔥', firedTxt:'BALL GESTARTET!',
+                comboPrefix:'x KOMBO!', rememberTxt:'MERKEN!', wrongIcon:'❌ ANDERES SYMBOL!',
+                wrongSub:'VERSCHIEDENE SYMBOLE PASSEN NICHT!', findSame:'GLEICHES SYMBOL FINDEN! 👉',
+                matched:'✅ ZUGEORDNET! +PUNKTE!', bonusBall:'+1 🏐 BONUS BALL!',
+                readyTxt:'Bereit? Jetzt SPIELEN!', skipHint:'👇 SKIP unten tippen',
+                noShowTxt:'Nicht mehr anzeigen', goingCard:'GEHT ZUR KARTE!', wallHit:'AUFGEPRALLT!',
+                fireWarning:'🔥 BALL ERHITZT SICH!', whatIs:'WAS IST DAS?', release:'LOSLASSEN!'
+            },
+            fr: {
+                titles:['🎯 TIRE LA FRONDE ET LANCE!','🧱 REBONDIS — GAGNE DES COMBOS!','🃏 TOUCHE UNE CARTE — RETIENS L\'ICÔNE!','✅ TROUVE LA MÊME, TIRE!','🏆 ASSOCIE TOUTES LES CARTES!'],
+                subs:['Mets le doigt sur la fronde, tire et lâche','Plus de murs = plus de points!','Quelle icône sur quelle carte — mémorise!','Trouve la même icône, tire — +POINTS!','Prêt? JOUE!'],
+                pullTxt:'TIRE EN ARRIÈRE...', releaseTxt:'LÂCHE! 🔥', firedTxt:'BALLE LANCÉE!',
+                comboPrefix:'x COMBO!', rememberTxt:'RETIENS!', wrongIcon:'❌ ICÔNE DIFFÉRENTE!',
+                wrongSub:'ICÔNES DIFFÉRENTES NE CORRESPONDENT PAS!', findSame:'TROUVE LA MÊME! 👉',
+                matched:'✅ ASSOCIÉ! +POINTS!', bonusBall:'+1 🏐 BALLE BONUS!',
+                readyTxt:'Prêt? À TOI DE JOUER!', skipHint:'👇 appuie sur SKIP',
+                noShowTxt:'Ne plus afficher', goingCard:'VA VERS LA CARTE!', wallHit:'REBONDI!',
+                fireWarning:'🔥 BALLE EN FEU!', whatIs:'C\'EST QUOI?', release:'LÂCHE!'
+            },
+            es: {
+                titles:['🎯 ¡TENSA Y LANZA LA HONDA!','🧱 ¡REBOTA — GANA COMBOS!','🃏 ¡GOLPEA — RECUERDA EL ÍCONO!','✅ ¡ENCUENTRA EL PAR, GOLPÉALO!','🏆 ¡EMPAREJA TODAS LAS CARTAS!'],
+                subs:['Pon el dedo en la honda, tensa y suelta','¡Más paredes = más puntos!','Qué ícono en qué carta — memoriza','Encuentra el mismo ícono — +PUNTOS!','¿Listo? ¡JUEGA!'],
+                pullTxt:'TENSANDO...', releaseTxt:'¡SUELTA! 🔥', firedTxt:'¡BOLA LANZADA!',
+                comboPrefix:'x COMBO!', rememberTxt:'¡RECUERDA!', wrongIcon:'❌ ¡ÍCONO DIFERENTE!',
+                wrongSub:'¡ÍCONOS DIFERENTES NO EMPAREJAN!', findSame:'¡ENCUENTRA EL MISMO! 👉',
+                matched:'✅ ¡EMPAREJADO! +PUNTOS!', bonusBall:'+1 🏐 ¡BOLA EXTRA!',
+                readyTxt:'¿Listo? ¡EMPIEZA!', skipHint:'👇 pulsa SKIP abajo',
+                noShowTxt:'No mostrar de nuevo', goingCard:'¡VA A LA CARTA!', wallHit:'¡REBOTÓ!',
+                fireWarning:'🔥 ¡BOLA EN LLAMAS!', whatIs:'¿QUÉ ES ESTO?', release:'¡SUELTA!'
+            },
+            ru: {
+                titles:['🎯 НАТЯНИ РОГАТКУ И БРОСЬ!','🧱 ОТСКАКИВАЙ — ЗАРАБАТЫВАЙ КОМБО!','🃏 ПОПАДИ В КАРТУ — ЗАПОМНИ!','✅ НАЙДИ ТАКУЮ ЖЕ!','🏆 СОВМЕСТИ ВСЕ КАРТЫ!'],
+                subs:['Потяни рогатку назад и отпусти','Больше стен = больше очков!','Какой значок на какой карте — запомни!','Найди такой же значок — +ОЧКИ!','Готов? ВПЕРЁД!'],
+                pullTxt:'ТЯНИ НАЗАД...', releaseTxt:'ОТПУСКАЙ! 🔥', firedTxt:'МЯЧ ЗАПУЩЕН!',
+                comboPrefix:'x КОМБО!', rememberTxt:'ЗАПОМНИ!', wrongIcon:'❌ ДРУГОЙ ЗНАЧОК!',
+                wrongSub:'РАЗНЫЕ ЗНАЧКИ НЕ СОВПАДАЮТ!', findSame:'НАЙДИ ТАКОЙ ЖЕ! 👉',
+                matched:'✅ СОВПАЛО! +ОЧКИ!', bonusBall:'+1 🏐 БОНУСНЫЙ МЯЧ!',
+                readyTxt:'Готов? ИГРАЕМ!', skipHint:'👇 нажми SKIP внизу',
+                noShowTxt:'Больше не показывать', goingCard:'ЛЕТИТ К КАРТЕ!', wallHit:'ОТСКОЧИЛ!',
+                fireWarning:'🔥 МЯЧ РАСКАЛЯЕТСЯ!', whatIs:'ЧТО ЭТО?', release:'ОТПУСКАЙ!'
+            },
+            zh: {
+                titles:['🎯 拉弹弓发射！','🧱 弹墙壁 — 获得连击！','🃏 击中牌 — 记住图标！','✅ 找到相同的，击中它！','🏆 匹配所有牌赢得胜利！'],
+                subs:['手指放在弹弓上，拉回然后放开','撞墙越多积分越高！球会变红！','哪张牌是什么图标 — 记住！','找到相同图标击中 — +积分!','准备好了吗？开始！'],
+                pullTxt:'向后拉...', releaseTxt:'放开！🔥', firedTxt:'球飞出去了！',
+                comboPrefix:'x 连击！', rememberTxt:'记住！', wrongIcon:'❌ 不同图标！',
+                wrongSub:'不同图标不能匹配！', findSame:'找相同图标！👉',
+                matched:'✅ 匹配！+积分！', bonusBall:'+1 🏐 奖励球！',
+                readyTxt:'准备好了？开始吧！', skipHint:'👇 点击下方SKIP',
+                noShowTxt:'不再显示', goingCard:'飞向牌！', wallHit:'弹跳了！',
+                fireWarning:'🔥 球变热了 — 危险！', whatIs:'这是什么？', release:'放开！'
+            },
+            ja: {
+                titles:['🎯 スリングを引いて発射！','🧱 壁で跳ね返る — コンボ獲得！','🃏 カードに当てる — アイコン記憶！','✅ 同じアイコンを見つけて当てる！','🏆 全カードをマッチさせて勝利！'],
+                subs:['指をスリングに当てて引いて離す','壁が多いほど点数が高い！球が赤くなる！','どのカードにどのアイコン — 覚えて！','同じアイコンを見つけて当てる — +ポイント！','準備はOK？スタート！'],
+                pullTxt:'引っ張って...', releaseTxt:'離して！🔥', firedTxt:'ボール発射！',
+                comboPrefix:'xコンボ！', rememberTxt:'覚えて！', wrongIcon:'❌ 違うアイコン！',
+                wrongSub:'違うアイコンはマッチしない！', findSame:'同じアイコンを探して！👉',
+                matched:'✅ マッチ！+ポイント！', bonusBall:'+1 🏐 ボーナスボール！',
+                readyTxt:'準備OK？スタート！', skipHint:'👇 下のSKIPをタップ',
+                noShowTxt:'次から表示しない', goingCard:'カードへ向かってる！', wallHit:'バウンド！',
+                fireWarning:'🔥 ボールが燃えてる！', whatIs:'これは何？', release:'離して！'
+            },
+            pt: {
+                titles:['🎯 PUXE E LANCE A FUNDA!','🧱 RICOCHETEIE — GANHE COMBOS!','🃏 ACERTE A CARTA — LEMBRE O ÍCONE!','✅ ENCONTRE O PAR, ACERTE!','🏆 ASSOCIE TODAS AS CARTAS!'],
+                subs:['Coloca o dedo na funda, puxa e solta','Mais paredes = mais pontos!','Qual ícone em qual carta — memorize!','Encontra o mesmo ícone — +PONTOS!','Pronto? JOGAR!'],
+                pullTxt:'PUXAR...', releaseTxt:'SOLTAR! 🔥', firedTxt:'BOLA LANÇADA!',
+                comboPrefix:'x COMBO!', rememberTxt:'LEMBRE!', wrongIcon:'❌ ÍCONE DIFERENTE!',
+                wrongSub:'ÍCONES DIFERENTES NÃO COMBINAM!', findSame:'ENCONTRE O MESMO! 👉',
+                matched:'✅ COMBINADO! +PONTOS!', bonusBall:'+1 🏐 BOLA BÔNUS!',
+                readyTxt:'Pronto? Vamos JOGAR!', skipHint:'👇 toca SKIP abaixo',
+                noShowTxt:'Não mostrar novamente', goingCard:'INDO PARA A CARTA!', wallHit:'RICOCHETEOU!',
+                fireWarning:'🔥 BOLA EM CHAMAS!', whatIs:'O QUE É ISSO?', release:'SOLTAR!'
+            },
+            ar: {
+                titles:['🎯 اسحب المقلاع وأطلق!','🧱 ارتدّ عن الجدران — اكسب كومبو!','🃏 اضرب البطاقة — تذكّر الأيقونة!','✅ ابحث عن المثيل واضربه!','🏆 طابق جميع البطاقات!'],
+                subs:['ضع إصبعك على المقلاع، اسحب وأطلق','كلما ارتددت أكثر نلت نقاطاً أكثر!','أي أيقونة على أي بطاقة — تذكّر!','ابحث عن نفس الأيقونة — +نقاط!','مستعد؟ ابدأ!'],
+                pullTxt:'اسحب...', releaseTxt:'أطلق! 🔥', firedTxt:'انطلقت الكرة!',
+                comboPrefix:'x كومبو!', rememberTxt:'تذكّر!', wrongIcon:'❌ أيقونة مختلفة!',
+                wrongSub:'الأيقونات المختلفة لا تتطابق!', findSame:'ابحث عن المثيل! 👉',
+                matched:'✅ تطابق! +نقاط!', bonusBall:'+1 🏐 كرة مكافأة!',
+                readyTxt:'مستعد؟ هيا نلعب!', skipHint:'👇 اضغط SKIP أدناه',
+                noShowTxt:'لا تعرض مجدداً', goingCard:'تتجه للبطاقة!', wallHit:'ارتدّت!',
+                fireWarning:'🔥 الكرة تحترق!', whatIs:'ما هذا؟', release:'أطلق!'
+            }
+        };
+
+        function getDT() { return DEMO_TEXTS[currentLang] || DEMO_TEXTS['tr']; }
+
+        function onDemoNoShow(checked) {
+            demoNoShow = checked;
+            const label = document.getElementById('demo-no-show-label');
+            if (label) label.style.color = checked ? '#ffcc00' : '#aaa';
+        }
+
+        function checkShowDemo() {
+            try {
+                if (!localStorage.getItem(DEMO_KEY)) {
+                    showDemo();
+                } else {
+                    document.getElementById('welcome-screen').style.display = 'flex';
+                }
+            } catch(e) {
+                document.getElementById('welcome-screen').style.display = 'flex';
+            }
+        }
+
+        function showDemo() {
+            demoRunning = true; demoPhase = 0; demoT = 0; demoNoShow = false;
+            const screen = document.getElementById('demo-screen');
+            screen.style.display = 'flex';
+            demoCanvas = document.getElementById('demo-canvas');
+            demoCtx = demoCanvas.getContext('2d');
+            demoW = demoCanvas.width = window.innerWidth;
+            demoH = demoCanvas.height = window.innerHeight;
+            // no-show checkbox label güncelle
+            const lbl = document.getElementById('demo-no-show-label');
+            if (lbl) lbl.textContent = getDT().noShowTxt;
+            const skipBtn = document.getElementById('demo-skip-btn');
+            if (skipBtn) skipBtn.textContent = 'SKIP ▶';
+            startDemoPhase(0);
+            requestAnimationFrame(demoLoop);
+        }
+
+        function skipDemo() {
+            endDemo();
+        }
+
+        function endDemo() {
+            demoRunning = false;
+            if (demoAnimId) cancelAnimationFrame(demoAnimId);
+            document.getElementById('demo-screen').style.display = 'none';
+            if (demoNoShow) {
+                try { localStorage.setItem(DEMO_KEY, '1'); } catch(e) {}
+            }
+            // Welcome screen göster
+            const ws = document.getElementById('welcome-screen');
+            ws.style.display = 'flex';
+            ws.style.opacity = '0';
+            ws.style.transition = 'opacity 0.6s';
+            setTimeout(() => { ws.style.opacity = '1'; }, 50);
+        }
+
+        function updateDots(phase) {
+            for (let i = 0; i < 5; i++) {
+                const d = document.getElementById('ddot-'+i);
+                if (d) d.classList.toggle('active', i === phase);
+            }
+        }
+
+        function startDemoPhase(phase) {
+            demoPhase = phase; demoT = 0;
+            let W = demoW, H = demoH;
+            let wall = { l: W*.04, r: W*.96, t: H*.1, b: H*.91 };
+            let cs = Math.min(W,H)*.1;
+            let gap = cs*.18;
+            let gx = W*.57, gy = H*.42;
+            demoD = {
+                wall, sx: W*.22, sy: H*.58, cs,
+                cards: [
+                    {x:gx,        y:gy,        size:cs, icon:'🍎', open:false, matched:false, pairId:0},
+                    {x:gx+cs+gap, y:gy,        size:cs, icon:'🍌', open:false, matched:false, pairId:1},
+                    {x:gx,        y:gy+cs+gap, size:cs, icon:'🍌', open:false, matched:false, pairId:1},
+                    {x:gx+cs+gap, y:gy+cs+gap, size:cs, icon:'🍎', open:false, matched:false, pairId:0},
+                ],
+                bx:W*.22, by:H*.58, bvx:0, bvy:0, bActive:false, bFire:0, bBounces:0,
+                pullX:W*.22, pullY:H*.58, pullPhase:'idle',
+                fText:'', fAlpha:0, fColor:'#fff', fX:W/2, fY:H*.35,
+                comboText:'', comboAlpha:0,
+                phaseDur:[280, 320, 300, 300, 240][phase] || 280,
+                arrowAlpha:0, ax1:0,ay1:0,ax2:0,ay2:0,arrowColor:'#00e5ff',
+                _goCard:false, _phase3Init:false
+            };
+            if (phase===2) { demoD.cards[1].open=true; }
+            if (phase===3) { demoD.cards[1].open=true; demoD.cards[2].open=true; }
+            if (phase===4) { demoD.cards.forEach(c=>{c.open=true;c.matched=true;}); }
+            updateDots(phase);
+        }
+
+        function demoLoop() {
+            if (!demoRunning) return;
+            demoAnimId = requestAnimationFrame(demoLoop);
+            demoT++;
+            let D=demoD, W=demoW, H=demoH;
+            if (!D) return;
+            if (demoT > D.phaseDur) {
+                if (demoPhase < 4) { startDemoPhase(demoPhase+1); return; }
+                else { endDemo(); return; }
+            }
+            D.fAlpha = Math.max(0, D.fAlpha-.013);
+            D.comboAlpha = Math.max(0, D.comboAlpha-.018);
+
+            // DRAW BG
+            let bg = demoCtx.createLinearGradient(0,0,0,H);
+            bg.addColorStop(0,'#04010a'); bg.addColorStop(1,'#0f0520');
+            demoCtx.fillStyle=bg; demoCtx.fillRect(0,0,W,H);
+            demoCtx.strokeStyle='#ff3366'; demoCtx.lineWidth=3;
+            demoCtx.shadowColor='#ff3366'; demoCtx.shadowBlur=14;
+            demoCtx.strokeRect(D.wall.l,D.wall.t,D.wall.r-D.wall.l,D.wall.b-D.wall.t);
+            demoCtx.shadowBlur=0;
+
+            // PHASE LOGIC
+            if (demoPhase===0) dp0(D,W,H,D.wall);
+            else if (demoPhase===1) dp1(D,W,H,D.wall);
+            else if (demoPhase===2) dp2(D,W,H,D.wall);
+            else if (demoPhase===3) dp3(D,W,H,D.wall);
+            else if (demoPhase===4) dp4(D,W,H,D.wall);
+
+            // CARDS
+            D.cards.forEach(c=>demoDrawCard(c));
+            // SLINGSHOT
+            demoDrawSling(D.sx,D.sy,D.pullX,D.pullY);
+            if (D.bActive) demoDrawBall(D.bx,D.by,D.bFire);
+            else if (D.pullPhase==='pull') demoDrawBall(D.pullX,D.pullY,0);
+            // ARROW
+            if (D.arrowAlpha>0) { demoDrawArrow(D.ax1,D.ay1,D.ax2,D.ay2,D.arrowColor,D.arrowAlpha); D.arrowAlpha=Math.max(0,D.arrowAlpha-.01); }
+            // TEXTS
+            if (D.comboAlpha>0) demoDrawBigText(D.comboText,W/2,H*.31,'#ffcc00',D.comboAlpha);
+            if (D.fAlpha>0) demoDrawBigText(D.fText,D.fX,D.fY,D.fColor,D.fAlpha);
+
+            // HUD
+            let dt=getDT();
+            demoCtx.save();
+            demoCtx.fillStyle='rgba(18,6,36,0.95)'; demoCtx.fillRect(0,0,W,H*.095);
+            demoCtx.font='bold '+Math.round(H*.024)+'px monospace';
+            demoCtx.fillStyle='#ffcc00'; demoCtx.textAlign='center';
+            demoCtx.shadowColor='#ffcc00'; demoCtx.shadowBlur=8;
+            demoCtx.fillText('🎮  DEMO  🎮', W/2, H*.06);
+            demoCtx.restore();
+            // BOTTOM LABEL
+            let step=demoPhase;
+            demoDrawBottomPanel(dt.titles[step], dt.subs[step], ['#00e5ff','#ffcc00','#ff3366','#00ff88','#ff9900'][step]);
+        }
+
+        // ── Yardımcı çiziciler ──────────────────────────────────────
+        function demoDrawSling(sx,sy,px,py) {
+            let fW=demoW*.038, fH=demoH*.065;
+            demoCtx.save();
+            demoCtx.strokeStyle='#8B6914'; demoCtx.lineWidth=Math.max(3,demoW*.006);
+            demoCtx.beginPath(); demoCtx.moveTo(sx,sy+fH); demoCtx.lineTo(sx,sy+fH*2.2); demoCtx.stroke();
+            demoCtx.beginPath(); demoCtx.moveTo(sx,sy+fH*.4); demoCtx.lineTo(sx-fW,sy-fH*.25); demoCtx.stroke();
+            demoCtx.beginPath(); demoCtx.moveTo(sx,sy+fH*.4); demoCtx.lineTo(sx+fW,sy-fH*.25); demoCtx.stroke();
+            let pulling = (px!==sx||py!==sy);
+            demoCtx.strokeStyle=pulling?'#cc8800':'#886600';
+            demoCtx.lineWidth=Math.max(2,demoW*.004);
+            demoCtx.beginPath();
+            demoCtx.moveTo(sx-fW,sy-fH*.25); demoCtx.lineTo(px,py); demoCtx.lineTo(sx+fW,sy-fH*.25);
+            demoCtx.stroke();
+            demoCtx.restore();
+        }
+
+        function demoDrawBall(x,y,fire) {
+            let r=Math.max(7,demoW*.022);
+            demoCtx.save(); demoCtx.translate(x,y);
+            let g=demoCtx.createRadialGradient(-r*.3,-r*.3,0,0,0,r);
+            if (fire>0.3) {
+                g.addColorStop(0,'#fff');
+                g.addColorStop(.5,`rgb(255,${Math.round(150*(1-fire))},0)`);
+                g.addColorStop(1,`rgb(200,${Math.round(40*(1-fire))},0)`);
+                demoCtx.shadowColor='#ff6600'; demoCtx.shadowBlur=18+fire*14;
+            } else {
+                g.addColorStop(0,'#fff'); g.addColorStop(1,'#00e5ff');
+                demoCtx.shadowColor='#00e5ff'; demoCtx.shadowBlur=12;
+            }
+            demoCtx.beginPath(); demoCtx.arc(0,0,r,0,Math.PI*2);
+            demoCtx.fillStyle=g; demoCtx.fill(); demoCtx.restore();
+        }
+
+        function demoDrawCard(card) {
+            let h=card.size/2;
+            demoCtx.save();
+            if (card.matched) { demoCtx.fillStyle='rgba(0,255,136,0.18)'; demoCtx.strokeStyle='#00ff88'; }
+            else if (card.open) { demoCtx.fillStyle='rgba(80,30,160,0.92)'; demoCtx.strokeStyle='#ffcc00'; }
+            else { demoCtx.fillStyle='rgba(40,15,90,0.9)'; demoCtx.strokeStyle='#ff3366'; }
+            demoCtx.lineWidth=2.5;
+            demoCtx.shadowColor=demoCtx.strokeStyle; demoCtx.shadowBlur=10;
+            demoCtx.fillRect(card.x-h,card.y-h,card.size,card.size);
+            demoCtx.strokeRect(card.x-h,card.y-h,card.size,card.size);
+            demoCtx.shadowBlur=0;
+            if (card.open||card.matched) {
+                demoCtx.font=Math.round(card.size*.52)+'px sans-serif';
+                demoCtx.textAlign='center'; demoCtx.textBaseline='middle';
+                demoCtx.fillStyle='#fff'; demoCtx.fillText(card.icon,card.x,card.y);
+            } else {
+                demoCtx.font='bold '+Math.round(card.size*.55)+'px monospace';
+                demoCtx.fillStyle='#ff3366'; demoCtx.textAlign='center'; demoCtx.textBaseline='middle';
+                demoCtx.fillText('?',card.x,card.y);
+            }
+            demoCtx.restore();
+        }
+
+        function demoHand(x,y,alpha) {
+            if(alpha<=0)return;
+            demoCtx.save(); demoCtx.globalAlpha=Math.min(1,alpha);
+            demoCtx.font=Math.round(demoH*.052)+'px sans-serif';
+            demoCtx.textAlign='center'; demoCtx.textBaseline='middle';
+            demoCtx.fillText('✋',x,y); demoCtx.restore();
+        }
+
+        function demoPoint(cx,cy,alpha,label) {
+            if(alpha<=0)return;
+            let D=demoD;
+            demoCtx.save(); demoCtx.globalAlpha=Math.min(1,alpha);
+            demoCtx.font=Math.round(demoH*.048)+'px sans-serif';
+            demoCtx.textAlign='center'; demoCtx.textBaseline='middle';
+            demoCtx.fillText('👆',cx,cy-D.cs*.82);
+            if(label){
+                demoCtx.font='bold '+Math.round(demoH*.028)+'px monospace';
+                demoCtx.fillStyle='#ffcc00'; demoCtx.shadowColor='#ffcc00'; demoCtx.shadowBlur=8;
+                demoCtx.fillText(label,cx,cy-D.cs*1.28);
+            }
+            demoCtx.restore();
+        }
+
+        function demoDrawBigText(txt,x,y,color,alpha) {
+            if(alpha<=0)return;
+            demoCtx.save(); demoCtx.globalAlpha=Math.min(1,alpha);
+            let fs=Math.round(demoH*.046);
+            demoCtx.font='bold '+fs+'px monospace';
+            demoCtx.fillStyle=color; demoCtx.textAlign='center';
+            demoCtx.shadowColor=color; demoCtx.shadowBlur=16;
+            demoCtx.fillText(txt,x,y); demoCtx.restore();
+        }
+
+        function demoDrawArrow(x1,y1,x2,y2,color,alpha) {
+            if(alpha<=0)return;
+            demoCtx.save(); demoCtx.globalAlpha=alpha;
+            demoCtx.strokeStyle=color; demoCtx.lineWidth=2.5;
+            demoCtx.setLineDash([8,5]);
+            demoCtx.beginPath(); demoCtx.moveTo(x1,y1); demoCtx.lineTo(x2,y2); demoCtx.stroke();
+            demoCtx.setLineDash([]);
+            let ang=Math.atan2(y2-y1,x2-x1);
+            demoCtx.fillStyle=color;
+            demoCtx.beginPath();
+            demoCtx.moveTo(x2,y2);
+            demoCtx.lineTo(x2-12*Math.cos(ang-.4),y2-12*Math.sin(ang-.4));
+            demoCtx.lineTo(x2-12*Math.cos(ang+.4),y2-12*Math.sin(ang+.4));
+            demoCtx.fill(); demoCtx.restore();
+        }
+
+        function demoDrawBottomPanel(title,sub,color) {
+            let W=demoW, H=demoH;
+            let py=H*.77, panH=H*.17;
+            demoCtx.save();
+            demoCtx.fillStyle='rgba(4,1,14,0.92)'; demoCtx.fillRect(0,py-8,W,panH+8);
+            demoCtx.strokeStyle=color; demoCtx.lineWidth=2;
+            demoCtx.shadowColor=color; demoCtx.shadowBlur=10;
+            demoCtx.strokeRect(0,py-8,W,panH+8); demoCtx.shadowBlur=0;
+            let fs=Math.min(H*.037,W*.045);
+            demoCtx.font='bold '+Math.round(fs)+'px monospace';
+            demoCtx.fillStyle=color; demoCtx.textAlign='center';
+            demoCtx.shadowColor=color; demoCtx.shadowBlur=8;
+            demoCtx.fillText(title,W/2,py+fs*1.1);
+            demoCtx.font=Math.round(fs*.68)+'px monospace';
+            demoCtx.fillStyle='#bbb'; demoCtx.shadowBlur=0;
+            demoCtx.fillText(sub,W/2,py+fs*2.2);
+            let prog=demoT/(demoD.phaseDur||280);
+            demoCtx.fillStyle='rgba(255,255,255,0.08)'; demoCtx.fillRect(W*.08,py+panH-10,W*.84,4);
+            demoCtx.fillStyle=color; demoCtx.shadowColor=color; demoCtx.shadowBlur=4;
+            demoCtx.fillRect(W*.08,py+panH-10,W*.84*Math.min(1,prog),4);
+            demoCtx.restore();
+        }
+
+        function demoHitCard(D,card) {
+            let r=demoW*.022+4;
+            let half=card.size/2+r;
+            if(Math.abs(D.bx-card.x)<half&&Math.abs(D.by-card.y)<half)return true;
+            let px=D.bx-D.bvx,py=D.by-D.bvy;
+            let steps=Math.ceil(Math.hypot(D.bvx,D.bvy)/5);
+            for(let s=1;s<=steps;s++){
+                let ix=px+D.bvx*(s/steps),iy=py+D.bvy*(s/steps);
+                if(Math.abs(ix-card.x)<half&&Math.abs(iy-card.y)<half)return true;
+            }
+            return false;
+        }
+
+        // ── SAHNE 0: Sapan çek, bırak, top uçsun ─────────────────
+        function dp0(D,W,H,wall) {
+            let t=demoT, dt=getDT();
+            if(t<25){ demoDrawSling(D.sx,D.sy,D.sx,D.sy); demoHand(D.sx,D.sy-H*.1,t/25); demoDrawBigText('DEMO',W/2,H*.25,'#ffcc00',.4); }
+            else if(t<90){
+                let prog=(t-25)/65; D.pullPhase='pull';
+                D.pullX=D.sx-prog*W*.13; D.pullY=D.sy+prog*H*.07;
+                demoHand(D.pullX,D.pullY+H*.03,0.9);
+                demoDrawBigText(dt.pullTxt,W/2,H*.27,'#00e5ff',0.85);
+            } else if(t<125){
+                let sh=Math.sin(t*.9)*2; D.pullX=D.sx-W*.13+sh; D.pullY=D.sy+H*.07; D.pullPhase='pull';
+                demoHand(D.pullX,D.pullY+H*.03,0.9);
+                demoDrawBigText(dt.releaseTxt,W/2,H*.27,'#ffcc00',(t-90)/35);
+            } else {
+                D.pullPhase='idle'; D.pullX=D.sx; D.pullY=D.sy;
+                if(!D.bActive){ D.bActive=true; D.bx=D.sx-W*.13; D.by=D.sy+H*.07; D.bvx=11; D.bvy=-8; }
+                D.bx+=D.bvx*.85; D.by+=D.bvy*.85;
+                if(D.bx>wall.r){D.bx=wall.r;D.bvx*=-.9;} if(D.bx<wall.l){D.bx=wall.l;D.bvx*=-.9;}
+                if(D.by<wall.t){D.by=wall.t;D.bvy*=-.9;} if(D.by>wall.b){D.by=wall.b;D.bvy*=-.9;}
+                demoDrawBigText(dt.firedTxt,W/2,H*.27,'#ff9900',Math.min(1,(t-125)/20));
+            }
+        }
+
+        // ── SAHNE 1: Duvara çarp, combo say, karta gir ───────────
+        function dp1(D,W,H,wall) {
+            let t=demoT, dt=getDT();
+            let targetCard=D.cards[1];
+            if(t<15){ demoDrawSling(D.sx,D.sy,D.sx,D.sy); demoHand(D.sx,D.sy-H*.1,t/15); }
+            else if(t<70){
+                let prog=(t-15)/55; D.pullPhase='pull';
+                D.pullX=D.sx-prog*W*.12; D.pullY=D.sy-prog*H*.05;
+                demoHand(D.pullX,D.pullY+H*.03,.9);
+            } else if(t<95){
+                D.pullPhase='idle'; D.pullX=D.sx; D.pullY=D.sy;
+                if(!D.bActive){ D.bActive=true; D.bx=D.sx-W*.12; D.by=D.sy-H*.05; D.bvx=8; D.bvy=-10; D.bBounces=0; D.bFire=0; D._goCard=false; }
+                D.bx+=D.bvx; D.by+=D.bvy;
+            } else {
+                D.pullPhase='idle'; D.pullX=D.sx; D.pullY=D.sy;
+                if(!D.bActive){ D.bActive=true; D.bx=D.sx; D.by=D.sy; D.bvx=8; D.bvy=-10; D.bBounces=0; D.bFire=0; D._goCard=false; }
+                if(D.bBounces>=4&&!D._goCard&&!targetCard.open){
+                    D._goCard=true;
+                    let dx=targetCard.x-D.bx,dy=targetCard.y-D.by,mag=Math.hypot(dx,dy)||1;
+                    let spd=Math.hypot(D.bvx,D.bvy);
+                    D.bvx=(dx/mag)*spd; D.bvy=(dy/mag)*spd;
+                }
+                D.bx+=D.bvx*.88; D.by+=D.bvy*.88;
+                let hit=false;
+                if(!D._goCard){
+                    D.cards.forEach(card=>{
+                        let half=card.size/2+18;
+                        if(Math.abs(D.bx-card.x)<half&&Math.abs(D.by-card.y)<half){
+                            let dx2=D.bx-card.x,dy2=D.by-card.y,mag2=Math.hypot(dx2,dy2)||1;
+                            let spd2=Math.hypot(D.bvx,D.bvy);
+                            D.bvx=(dx2/mag2)*spd2; D.bvy=(dy2/mag2)*spd2*.5; hit=true;
+                        }
+                    });
+                }
+                if(D.bx>wall.r){D.bx=wall.r;D.bvx*=-.9;hit=true;}
+                if(D.bx<wall.l){D.bx=wall.l;D.bvx*=-.9;hit=true;}
+                if(D.by<wall.t){D.by=wall.t;D.bvy*=-.9;hit=true;}
+                if(D.by>wall.b){D.by=wall.b;D.bvy*=-.9;hit=true;}
+                if(hit&&!D._goCard){
+                    D.bBounces++; D.bFire=Math.min(1,D.bBounces/6);
+                    D.comboText=D.bBounces+dt.comboPrefix; D.comboAlpha=2;
+                    demoCtx.save(); demoCtx.fillStyle='rgba(255,180,0,.3)';
+                    demoCtx.beginPath(); demoCtx.arc(D.bx,D.by,20,0,Math.PI*2); demoCtx.fill(); demoCtx.restore();
+                }
+                if(D._goCard&&!targetCard.open&&demoHitCard(D,targetCard)){
+                    targetCard.open=true; D.bActive=false;
+                    D.fText=targetCard.icon+' '+dt.rememberTxt; D.fAlpha=2.5; D.fColor='#ffcc00';
+                    D.fX=targetCard.x; D.fY=targetCard.y-targetCard.size;
+                }
+                demoDrawBigText(D.comboText||'',W/2,H*.31,'#ffcc00',D.comboAlpha);
+                D.comboAlpha=Math.max(0,D.comboAlpha-.025);
+                if(D.bBounces>=4&&!targetCard.open) demoDrawBigText(dt.goingCard,W/2,H*.23,'#ff9900',.8);
+                if(targetCard.open) demoPoint(targetCard.x,targetCard.y,1,dt.rememberTxt);
+                if(D.bBounces>=5) demoDrawBigText(dt.fireWarning,W/2,H*.23,'#ff3300',.85);
+            }
+        }
+
+        // ── SAHNE 2: Sapan çek, farklı karta vur ─────────────────
+        function dp2(D,W,H,wall) {
+            let t=demoT, dt=getDT();
+            let c2=D.cards[2]; // sol alt muz (farklı)
+            if(t<18){ demoDrawSling(D.sx,D.sy,D.sx,D.sy); demoHand(D.sx,D.sy-H*.1,t/18); demoPoint(c2.x,c2.y,t/18,dt.whatIs); }
+            else if(t<80){
+                let prog=(t-18)/62;
+                let ang=Math.atan2(c2.y-D.sy,c2.x-D.sx);
+                D.pullPhase='pull'; D.pullX=D.sx-Math.cos(ang)*prog*W*.13; D.pullY=D.sy-Math.sin(ang)*prog*H*.09;
+                demoHand(D.pullX,D.pullY+H*.03,.9); demoPoint(c2.x,c2.y,.7,dt.whatIs);
+            } else if(t<105){
+                D.pullPhase='idle'; D.pullX=D.sx; D.pullY=D.sy;
+                if(!D.bActive&&!c2.open){ D.bActive=true; let dx=c2.x-D.sx,dy=c2.y-D.sy,mag=Math.hypot(dx,dy)||1; D.bx=D.sx; D.by=D.sy; D.bvx=(dx/mag)*11; D.bvy=(dy/mag)*11; }
+                if(D.bActive){D.bx+=D.bvx;D.by+=D.bvy;}
+            } else {
+                D.pullPhase='idle';
+                if(D.bActive){ D.bx+=D.bvx*.9; D.by+=D.bvy*.9; if(!c2.open&&demoHitCard(D,c2)){ c2.open=true; D.bActive=false; D.fText=dt.wrongIcon; D.fAlpha=2.5; D.fColor='#ff3366'; D.fX=W/2; D.fY=H*.27; } }
+                if(c2.open){
+                    let a=Math.min(1,(t-130)/25);
+                    demoDrawBigText(dt.wrongSub,W/2,H*.34,'#ff8800',a);
+                    demoPoint(c2.x,c2.y,a,c2.icon);
+                    demoPoint(D.cards[1].x,D.cards[1].y,a,D.cards[1].icon);
+                }
+            }
+        }
+
+        // ── SAHNE 3: Doğru eşi bul ───────────────────────────────
+        function dp3(D,W,H,wall) {
+            let t=demoT, dt=getDT();
+            let c1=D.cards[1], c2=D.cards[2]; // her ikisi açık muz
+            if(t<35){
+                demoDrawSling(D.sx,D.sy,D.sx,D.sy);
+                let a=t/35;
+                demoPoint(c1.x,c1.y,a,c1.icon); demoPoint(c2.x,c2.y,a,c2.icon);
+                demoDrawBigText(dt.findSame,W/2,H*.27,'#00ff88',a);
+                D.arrowAlpha=a; D.ax1=c2.x; D.ay1=c2.y-c2.size/2; D.ax2=c1.x; D.ay2=c1.y+c1.size/2; D.arrowColor='#00ff88';
+            } else if(t<90){
+                let prog=(t-35)/55;
+                let ang=Math.atan2(c1.y-D.sy,c1.x-D.sx);
+                D.pullPhase='pull'; D.pullX=D.sx-Math.cos(ang)*prog*W*.13; D.pullY=D.sy-Math.sin(ang)*prog*H*.09;
+                demoHand(D.pullX,D.pullY+H*.03,.9);
+                if(prog>.7) demoDrawBigText(dt.release,W/2,H*.27,'#ffcc00',(prog-.7)/.3);
+            } else if(t<125){
+                D.pullPhase='idle'; D.pullX=D.sx; D.pullY=D.sy;
+                if(!D.bActive&&!c1.matched){ D.bActive=true; let dx=c1.x-D.sx,dy=c1.y-D.sy,mag=Math.hypot(dx,dy)||1; D.bx=D.sx; D.by=D.sy; D.bvx=(dx/mag)*12; D.bvy=(dy/mag)*12; }
+                if(D.bActive){D.bx+=D.bvx;D.by+=D.bvy;}
+            } else {
+                D.pullPhase='idle';
+                if(D.bActive){ D.bx+=D.bvx*.9; D.by+=D.bvy*.9; if(!c1.matched&&demoHitCard(D,c1)){ c1.matched=true; c2.matched=true; D.bActive=false; D.fText=dt.matched; D.fAlpha=3; D.fColor='#00ff88'; D.fX=W/2; D.fY=H*.27; D.comboText=dt.bonusBall; D.comboAlpha=3; demoCtx.save(); demoCtx.fillStyle='rgba(0,255,136,.2)'; demoCtx.beginPath(); demoCtx.arc((c1.x+c2.x)/2,(c1.y+c2.y)/2,100,0,Math.PI*2); demoCtx.fill(); demoCtx.restore(); } }
+                if(c1.matched){
+                    let cols=['#00ff88','#ffcc00','#00e5ff','#ff3366','#ff9900'];
+                    for(let i=0;i<8;i++){ demoCtx.save(); demoCtx.fillStyle=cols[(Math.floor(t*.08)+i)%5]; demoCtx.globalAlpha=.5; demoCtx.fillRect((Math.sin(t*.06+i*1.2)*.42+.5)*W,((t*.003+i*.13)%1)*H,8,13); demoCtx.restore(); }
+                }
+                demoDrawBigText(D.comboText||'',W/2,H*.32,'#ffcc00',D.comboAlpha); D.comboAlpha=Math.max(0,D.comboAlpha-.02);
+            }
+        }
+
+        // ── SAHNE 4: Level clear kutlaması ───────────────────────
+        function dp4(D,W,H,wall) {
+            let t=demoT, dt=getDT();
+            let cols=['#ff3366','#ffcc00','#00ff88','#00e5ff','#ff9900','#aa00ff'];
+            for(let i=0;i<14;i++){ demoCtx.save(); demoCtx.fillStyle=cols[i%cols.length]; demoCtx.globalAlpha=.55; demoCtx.fillRect((Math.sin(t*.05+i*1.05)*.45+.5)*W,((t*.003+i*.075)%1)*H,8,14); demoCtx.restore(); }
+            let p=1+Math.sin(t*.1)*.06;
+            demoCtx.save();
+            demoCtx.font='bold '+Math.round(H*.07*p)+'px monospace'; demoCtx.fillStyle='#ffcc00'; demoCtx.textAlign='center'; demoCtx.shadowColor='#ffcc00'; demoCtx.shadowBlur=30;
+            demoCtx.fillText('LEVEL CLEAR! 🏆',W/2,H*.28);
+            demoCtx.font='bold '+Math.round(H*.036)+'px monospace'; demoCtx.fillStyle='#00e5ff'; demoCtx.shadowColor='#00e5ff'; demoCtx.shadowBlur=14;
+            demoCtx.fillText(dt.readyTxt,W/2,H*.37);
+            demoCtx.globalAlpha=Math.min(1,(t-60)/40); demoCtx.font=Math.round(H*.026)+'px monospace'; demoCtx.fillStyle='#999'; demoCtx.shadowBlur=0;
+            demoCtx.fillText(dt.skipHint,W/2,H*.47);
+            demoCtx.restore();
+        }
+
+
+
+        function showPerfectPopup() {
+            const lang = currentLang;
+            const text = ['tr','en'].includes(lang) ? (lang==='tr'?'🌟 MÜKEMMEL! 🌟':'🌟 PERFECT! 🌟') : '🌟 PERFECT! 🌟';
+            const sub  = lang==='tr' ? '+2 TOP & +100 PUAN BONUS!' : '+2 BALLS & +100 SCORE BONUS!';
+            let el = document.createElement('div');
+            el.style.cssText = `position:absolute;top:42%;left:50%;
+                font-family:'Courier New',monospace;
+                text-align:center;pointer-events:none;z-index:50;
+                animation:perfectAnim 3s forwards;`;
+            el.innerHTML = `<div style="font-size:clamp(28px,7vw,52px);font-weight:900;color:#ffcc00;text-shadow:0 0 30px #ffcc00,0 0 60px #ff9900;">${text}</div>
+                <div style="font-size:clamp(13px,3.2vw,22px);color:#00ff88;font-weight:700;margin-top:6px;text-shadow:0 0 12px #00ff88;">${sub}</div>`;
+            document.getElementById('game-wrapper').appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        function showFireBonusPopup(text) {
+            let el = document.createElement('div');
+            el.style.cssText = `position:absolute;top:38%;left:50%;
+                font-family:'Courier New',monospace;white-space:nowrap;
+                pointer-events:none;z-index:50;
+                font-size:clamp(14px,3.8vw,26px);font-weight:900;
+                color:#ff6600;text-shadow:0 0 20px #ff3300,0 0 40px #ff6600;
+                animation:fireBonusAnim 2.5s forwards;`;
+            el.textContent = text;
+            document.getElementById('game-wrapper').appendChild(el);
+            setTimeout(() => el.remove(), 2500);
+        }
         function loadSettings() {
             try {
                 const raw = localStorage.getItem('slingfind_settings');
@@ -5608,6 +6380,13 @@
         document.getElementById('btn-en').addEventListener('click', tryStartMenuMusic);
         document.getElementById('player-name').addEventListener('focus', tryStartMenuMusic);
         loadSettings();
+        // Startup: welcome screen göster
+        (function startupShow() {
+            const ws = document.getElementById('welcome-screen');
+            ws.style.display = 'flex';
+            ws.style.opacity = '1';
+            ws.style.transition = '';
+        })();
 
         // Service Worker kaydet (PWA)
         if ('serviceWorker' in navigator) {
