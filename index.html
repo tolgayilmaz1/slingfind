@@ -4677,7 +4677,7 @@
             const lbl = document.getElementById('demo-no-show-label');
             if (lbl) lbl.textContent = getDT().noShowTxt;
             // Override endDemo to go to overlay
-            demoD._afterDemo = () => { overlay.classList.remove('hidden'); };
+            // afterDemo artık kullanılmıyor, endDemoToGame hallediyor
             startDemoPhase(0);
             requestAnimationFrame(demoLoop2);
         }
@@ -4719,10 +4719,13 @@
         function endDemoToGame() {
             demoRunning = false;
             if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
-            document.getElementById('demo-screen').style.display='none';
-            if (demoNoShow) { try { localStorage.setItem(DEMO_KEY,'1'); } catch(e){} }
-            // Her zaman overlay'i aç
+            document.getElementById('demo-screen').style.display = 'none';
+            if (demoNoShow) { try { localStorage.setItem(DEMO_KEY, '1'); } catch(e){} }
+            // Oyunu başlat - overlay'i göster, kullanıcı BAŞLA'ya basacak
             overlay.classList.remove('hidden');
+            // Overlay görünürlüğünü garantile
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'all';
         }
 
         // Starfield animation
