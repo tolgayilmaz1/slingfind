@@ -4651,19 +4651,23 @@
 
         function launchGame() {
             const ws = document.getElementById('welcome-screen');
-            ws.classList.add('fade-out');
-            // Müziği durdur (callback garantisi için try/catch)
+            // Hemen gizle
+            ws.style.opacity = '0';
+            ws.style.transition = 'opacity 0.5s';
             try { stopMenuMusic(); } catch(e) {}
             setTimeout(() => {
                 ws.style.display = 'none';
-                try {
-                    if (!localStorage.getItem(DEMO_KEY)) {
-                        showDemoThenGame();
-                    } else {
-                        overlay.classList.remove('hidden');
-                    }
-                } catch(e) { overlay.classList.remove('hidden'); }
-            }, 700);
+                ws.classList.remove('fade-out');
+                // Demo göster veya direkt oyuna geç
+                let showDemo = false;
+                try { showDemo = !localStorage.getItem(DEMO_KEY); } catch(e){}
+                if (showDemo) {
+                    showDemoThenGame();
+                } else {
+                    initAudio();
+                    startGame();
+                }
+            }, 500);
         }
 
         function showDemoThenGame() {
@@ -4721,11 +4725,9 @@
             if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
             document.getElementById('demo-screen').style.display = 'none';
             if (demoNoShow) { try { localStorage.setItem(DEMO_KEY, '1'); } catch(e){} }
-            // Oyunu başlat - overlay'i göster, kullanıcı BAŞLA'ya basacak
-            overlay.classList.remove('hidden');
-            // Overlay görünürlüğünü garantile
-            overlay.style.opacity = '1';
-            overlay.style.pointerEvents = 'all';
+            // Overlay yerine direkt startGame çağır
+            initAudio();
+            startGame();
         }
 
         // Starfield animation
