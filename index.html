@@ -162,6 +162,51 @@
         }
         .name-input::placeholder { color: #444; }
 
+        /* İsim spotlight overlay */
+        #name-spotlight {
+            position: absolute; inset: 0; z-index: 50;
+            background: rgba(6,3,15,0.92);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 16px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(4px);
+        }
+        #name-spotlight.show { opacity: 1; pointer-events: all; }
+        #name-spotlight-label {
+            font-size: 13px; letter-spacing: 5px; color: #ff3366;
+            font-weight: 900; text-shadow: 0 0 16px #ff3366;
+            animation: spotPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes spotPulse {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.97); }
+        }
+        #name-spotlight-input {
+            background: rgba(255,255,255,0.06); border: 3px solid #ff3366;
+            color: #fff; font-family: 'Courier New', monospace;
+            font-size: 26px; font-weight: 900; letter-spacing: 4px;
+            padding: 12px 24px; text-align: center; width: 260px;
+            text-transform: uppercase; outline: none;
+            box-shadow: 0 0 30px rgba(255,51,102,0.5);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #name-spotlight-input:focus {
+            border-color: #ffcc00; box-shadow: 0 0 30px rgba(255,204,0,0.6);
+        }
+        #name-spotlight-input::placeholder { color: #555; }
+        #name-spotlight-btn {
+            margin-top: 8px; padding: 12px 48px; font-size: 20px; font-weight: 900;
+            background: linear-gradient(135deg, #ff3366, #ffcc00);
+            color: #000; border: none; cursor: pointer; font-family: inherit;
+            letter-spacing: 3px; box-shadow: 4px 4px 0 #000;
+            transition: transform 0.1s;
+        }
+        #name-spotlight-btn:hover { transform: scale(1.05); }
+        #name-spotlight-hint {
+            font-size: 11px; color: #555; letter-spacing: 3px;
+        }
+
         /* BUTTON ROW */
         .ws-btn-row {
             display: flex; gap: 14px; margin-top: 22px; flex-wrap: wrap; justify-content: center;
@@ -189,8 +234,19 @@
             background: linear-gradient(160deg, #0d0520, #180a2b);
             border: 3px solid #ffcc00;
             box-shadow: 0 0 40px rgba(255,204,0,0.3), inset 0 0 40px rgba(0,0,0,0.5);
-            padding: 30px 36px; min-width: min(480px, 92vw); max-height: 80vh;
-            overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 16px;
+            min-width: min(480px, 92vw); max-height: 80vh;
+            display: flex; flex-direction: column; align-items: center;
+            overflow: hidden;
+        }
+        #hs-scroll-area {
+            overflow-y: auto; width: 100%; padding: 30px 36px 16px 36px;
+            flex: 1; display: flex; flex-direction: column; align-items: center; gap: 16px;
+        }
+        #hs-close-wrap {
+            width: 100%; padding: 12px 36px 20px; flex-shrink: 0;
+            background: linear-gradient(160deg, #0d0520, #180a2b);
+            display: flex; justify-content: center;
+            border-top: 1px solid rgba(255,204,0,0.15);
         }
         #hs-title {
             font-size: 32px; font-weight: 900; color: #ffcc00;
@@ -231,6 +287,232 @@
             transition: all 0.15s;
         }
         .hs-close-btn:hover { background: rgba(255,51,102,0.15); box-shadow: 0 0 12px #ff3366; }
+        /* ===== SETTINGS PANEL ===== */
+        #settings-panel {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(6,3,15,0.97); z-index: 36;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #settings-panel.show { opacity: 1; pointer-events: all; }
+        #settings-inner {
+            background: linear-gradient(160deg, #0a0318, #180a2b);
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 40px rgba(0,255,255,0.25);
+            min-width: min(500px, 94vw); max-height: 88vh;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        #settings-scroll {
+            overflow-y: auto; padding: 28px 32px 16px;
+            flex: 1; display: flex; flex-direction: column; gap: 0;
+        }
+        #settings-title {
+            font-size: 26px; font-weight: 900; color: #00ffff;
+            text-shadow: 0 0 16px #00ffff; letter-spacing: 4px;
+            text-align: center; margin-bottom: 24px;
+        }
+        .settings-section {
+            margin-bottom: 22px;
+        }
+        .settings-section-title {
+            font-size: 10px; letter-spacing: 4px; color: #ff3366;
+            font-weight: 900; text-transform: uppercase; margin-bottom: 12px;
+            padding-bottom: 6px; border-bottom: 1px solid rgba(255,51,102,0.3);
+        }
+        .settings-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+            gap: 12px;
+        }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-label {
+            font-size: 14px; color: #ccc; letter-spacing: 1px; flex: 1;
+        }
+        .settings-row-label span { font-size: 18px; margin-right: 8px; }
+
+        /* Toggle switch */
+        .sf-toggle {
+            position: relative; width: 48px; height: 26px; flex-shrink: 0;
+        }
+        .sf-toggle input { opacity: 0; width: 0; height: 0; }
+        .sf-toggle-slider {
+            position: absolute; inset: 0; cursor: pointer;
+            background: #333; border-radius: 26px;
+            transition: background 0.2s;
+        }
+        .sf-toggle-slider::before {
+            content: ''; position: absolute;
+            width: 20px; height: 20px; left: 3px; bottom: 3px;
+            background: #666; border-radius: 50%;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .sf-toggle input:checked + .sf-toggle-slider { background: rgba(0,255,255,0.3); border: 1px solid #00ffff; }
+        .sf-toggle input:checked + .sf-toggle-slider::before { transform: translateX(22px); background: #00ffff; }
+
+        /* Slider */
+        .sf-slider-wrap { display: flex; align-items: center; gap: 10px; min-width: 140px; }
+        .sf-slider {
+            flex: 1; -webkit-appearance: none; height: 4px;
+            border-radius: 2px; outline: none; cursor: pointer;
+            background: linear-gradient(to right, #00ffff 15%, #333 15%);
+        }
+        .sf-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 16px; height: 16px;
+            background: #00ffff; border-radius: 50%;
+            box-shadow: 0 0 6px #00ffff; cursor: pointer;
+        }
+        .sf-slider-val { font-size: 12px; color: #00ffff; width: 28px; text-align: right; font-weight: 900; }
+
+        /* Language grid */
+        .lang-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 4px;
+        }
+        .lang-grid-btn {
+            padding: 8px 10px; font-size: 12px; font-weight: 900;
+            background: rgba(255,255,255,0.04); border: 2px solid #333;
+            color: #888; cursor: pointer; font-family: inherit; letter-spacing: 1px;
+            transition: all 0.15s; text-align: left;
+        }
+        .lang-grid-btn:hover { border-color: #ffcc00; color: #ffcc00; background: rgba(255,204,0,0.06); }
+        .lang-grid-btn.active { border-color: #00ffff; color: #00ffff; background: rgba(0,255,255,0.08);
+            box-shadow: 0 0 10px rgba(0,255,255,0.2); }
+
+        /* Settings close bar */
+        #settings-close-wrap {
+            padding: 12px 32px 20px; flex-shrink: 0;
+            background: linear-gradient(160deg, #0a0318, #180a2b);
+            display: flex; justify-content: center;
+            border-top: 1px solid rgba(0,255,255,0.15);
+        }
+        .settings-close-btn {
+            padding: 10px 40px; font-size: 15px; font-weight: 900;
+            background: transparent; color: #00ffff; border: 2px solid #00ffff;
+            cursor: pointer; font-family: inherit; letter-spacing: 2px;
+            transition: all 0.15s;
+        }
+        .settings-close-btn:hover { background: rgba(0,255,255,0.1); box-shadow: 0 0 12px #00ffff; }
+
+        /* HUD müzik butonu */
+        #hud-music-btn {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            background: rgba(0,229,255,0.12); border: 1.5px solid #00e5ff;
+            color: #00e5ff; font-size: 11px; font-weight: 900;
+            padding: 4px 8px; cursor: pointer; font-family: inherit;
+            letter-spacing: 1px; white-space: nowrap;
+            transition: all 0.15s; border-radius: 2px;
+            display: flex; align-items: center; gap: 4px;
+        }
+        #hud-music-btn:hover { background: rgba(0,229,255,0.22); box-shadow: 0 0 8px #00e5ff; }
+        #hud-music-btn.muted { border-color: #555; color: #555; background: transparent; }
+
+        /* Müzik ses slider popup */
+        #hud-music-popup {
+            position: absolute; right: 8px; top: 100%; margin-top: 6px;
+            background: linear-gradient(160deg, #0a0318, #180a2b);
+            border: 2px solid #00e5ff; box-shadow: 0 0 20px rgba(0,229,255,0.3);
+            padding: 12px 14px; z-index: 15; min-width: 160px;
+            display: none; flex-direction: column; gap: 8px;
+        }
+        #hud-music-popup.show { display: flex; }
+        .hmp-label { font-size: 10px; color: #00e5ff; letter-spacing: 2px; font-weight: 900; }
+        .hmp-row { display: flex; align-items: center; gap: 8px; }
+        .hmp-slider {
+            flex: 1; -webkit-appearance: none; height: 4px;
+            border-radius: 2px; outline: none; cursor: pointer;
+            background: linear-gradient(to right, #00e5ff 30%, #333 30%);
+        }
+        .hmp-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 14px; height: 14px;
+            background: #00e5ff; border-radius: 50%;
+            box-shadow: 0 0 5px #00e5ff; cursor: pointer;
+        }
+        .hmp-val { font-size: 11px; color: #00e5ff; width: 24px; text-align: right; font-weight: 900; }
+        .hmp-mute-btn {
+            width: 100%; padding: 6px; font-size: 11px; font-weight: 900;
+            background: transparent; border: 1px solid #555; color: #888;
+            cursor: pointer; font-family: inherit; letter-spacing: 1px;
+            transition: all 0.15s;
+        }
+        .hmp-mute-btn:hover { border-color: #00e5ff; color: #00e5ff; }
+
+        /* ===== ADMIN PANEL ===== */
+        #admin-modal {
+            position: absolute; inset: 0; z-index: 60;
+            background: rgba(6,3,15,0.97);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #admin-modal.show { opacity: 1; pointer-events: all; }
+        #admin-inner {
+            background: linear-gradient(160deg, #0a0318, #180a2b);
+            border: 3px solid #ff3366;
+            box-shadow: 0 0 40px rgba(255,51,102,0.3);
+            padding: 36px 40px; min-width: min(360px, 90vw);
+            display: flex; flex-direction: column; align-items: center; gap: 18px;
+        }
+        #admin-title {
+            font-size: 22px; font-weight: 900; color: #ff3366;
+            letter-spacing: 4px; text-shadow: 0 0 16px #ff3366;
+        }
+        #admin-pass-input {
+            background: rgba(255,255,255,0.05); border: 2px solid #ff3366;
+            color: #fff; font-family: 'Courier New', monospace;
+            font-size: 18px; font-weight: 900; letter-spacing: 4px;
+            padding: 10px 18px; text-align: center; width: 240px;
+            outline: none; transition: box-shadow 0.2s;
+        }
+        #admin-pass-input:focus { box-shadow: 0 0 20px rgba(255,51,102,0.5); }
+        #admin-error {
+            font-size: 12px; color: #ff3366; letter-spacing: 2px;
+            min-height: 16px; text-align: center;
+        }
+        #admin-confirm-box {
+            display: none; flex-direction: column; align-items: center; gap: 14px; width: 100%;
+        }
+        #admin-confirm-box.show { display: flex; }
+        #admin-confirm-text {
+            font-size: 13px; color: #ccc; text-align: center; letter-spacing: 1px; line-height: 1.6;
+        }
+        .admin-btn-row { display: flex; gap: 12px; }
+        .admin-btn-danger {
+            padding: 11px 24px; font-size: 14px; font-weight: 900;
+            background: #ff3366; color: #fff; border: 2px solid #fff;
+            cursor: pointer; font-family: inherit; letter-spacing: 2px;
+            transition: transform 0.1s;
+        }
+        .admin-btn-danger:hover { transform: scale(1.05); }
+        .admin-btn-cancel {
+            padding: 11px 24px; font-size: 14px; font-weight: 900;
+            background: transparent; color: #888; border: 2px solid #555;
+            cursor: pointer; font-family: inherit; letter-spacing: 2px;
+            transition: all 0.15s;
+        }
+        .admin-btn-cancel:hover { color: #fff; border-color: #fff; }
+        #admin-success {
+            font-size: 13px; color: #00ff88; letter-spacing: 2px;
+            text-align: center; min-height: 16px;
+            text-shadow: 0 0 8px #00ff88;
+        }
+        .settings-admin-btn {
+            width: 100%; padding: 11px; font-size: 13px; font-weight: 900;
+            background: rgba(255,51,102,0.08); color: #ff3366;
+            border: 2px solid rgba(255,51,102,0.4); cursor: pointer;
+            font-family: inherit; letter-spacing: 2px; text-transform: uppercase;
+            transition: all 0.15s; margin-top: 6px;
+        }
+        .settings-admin-btn:hover { background: rgba(255,51,102,0.18); box-shadow: 0 0 12px rgba(255,51,102,0.3); }
+
+
+        /* Settings button in welcome screen */
+        .ws-settings-btn {
+            padding: 13px 22px; font-size: 16px; font-weight: 900;
+            background: transparent; color: #00ffff;
+            border: 3px solid #00ffff; cursor: pointer; font-family: inherit;
+            letter-spacing: 2px; text-transform: uppercase;
+            transition: all 0.15s;
+        }
+        .ws-settings-btn:hover { background: rgba(0,255,255,0.1); box-shadow: 0 0 16px #00ffff; }
+
         .hs-empty { color: #444; text-align: center; padding: 24px; font-size: 14px; letter-spacing: 2px; }
 
         /* GAME OVER PANEL */
@@ -279,6 +561,13 @@
             transition: all 0.15s;
         }
         .go-btn-hs:hover { background: rgba(255,204,0,0.15); box-shadow: 0 0 12px #ffcc00; }
+        .go-btn-home {
+            padding: 13px 30px; font-size: 18px; font-weight: 900;
+            background: transparent; color: #00ffff; border: 3px solid #00ffff;
+            cursor: pointer; font-family: inherit; letter-spacing: 2px;
+            transition: all 0.15s;
+        }
+        .go-btn-home:hover { background: rgba(0,255,255,0.1); box-shadow: 0 0 12px #00ffff; }
         #welcome-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #06030f; display: flex; flex-direction: column;
@@ -617,14 +906,15 @@
 
             <!-- Language selector -->
             <div class="lang-row">
-                <button class="lang-btn active" id="btn-tr" onclick="setLang('tr')">🇹🇷 Türkçe</button>
-                <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 English</button>
+                <button class="lang-btn active" id="btn-tr" onclick="initAudio();playMenuClick('lang');setLang('tr')">🇹🇷 Türkçe</button>
+                <button class="lang-btn" id="btn-en" onclick="initAudio();playMenuClick('lang');setLang('en')">🇬🇧 English</button>
             </div>
 
             <!-- Name input -->
             <div class="name-row">
                 <label class="name-label" id="ws-name-label">İSMİN NEDİR?</label>
-                <input class="name-input" id="player-name" type="text" maxlength="16" placeholder="OYUNCU" autocomplete="off" spellcheck="false"/>
+                <input class="name-input" id="player-name" type="text" maxlength="16" placeholder="OYUNCU" autocomplete="off" spellcheck="false"
+                       onkeydown="if(event.key==='Enter') goToGameMenu()"/>
             </div>
 
             <!-- How to play -->
@@ -637,8 +927,9 @@
 
             <!-- Buttons row -->
             <div class="ws-btn-row">
-                <button class="ws-start-btn" id="ws-start-btn" onclick="goToGameMenu()">BAŞLA!</button>
-                <button class="ws-hs-btn" id="ws-hs-btn" onclick="showHiScores()">🏆 HI-SCORES</button>
+                <button class="ws-start-btn" id="ws-start-btn" onclick="initAudio();playMenuClick('start');goToGameMenu()">BAŞLA!</button>
+                <button class="ws-hs-btn" id="ws-hs-btn" onclick="initAudio();playMenuClick('hs');showHiScores()">🏆 HI-SCORES</button>
+                <button class="ws-settings-btn" id="ws-settings-btn" onclick="initAudio();playMenuClick('settings');showSettings()">⚙ AYARLAR</button>
             </div>
 
             <!-- Credits -->
@@ -647,14 +938,146 @@
                 <span style="color:#333">Designed with ❤ · All rights reserved</span>
             </div>
         </div>
+
+        <!-- İSİM SPOTLIGHT -->
+        <div id="name-spotlight">
+            <div id="name-spotlight-label">⚠ İSMİNİ YAZMAN GEREKİYOR!</div>
+            <input id="name-spotlight-input" type="text" maxlength="16" placeholder="ADINI YAZ..." autocomplete="off" spellcheck="false"
+                   onkeydown="if(event.key==='Enter') confirmSpotlightName()"/>
+            <button id="name-spotlight-btn" onclick="confirmSpotlightName()">DEVAM ET ▶</button>
+            <div id="name-spotlight-hint">ENTER veya butona bas</div>
+        </div>
     </div>
 
     <!-- HI-SCORE PANEL -->
     <div id="hs-panel">
         <div id="hs-inner">
-            <div id="hs-title">🏆 HI-SCORES</div>
-            <div id="hs-list"><div class="hs-loading">Yükleniyor...</div></div>
-            <button class="hs-close-btn" onclick="hideHiScores()">✕ KAPAT</button>
+            <div id="hs-scroll-area">
+                <div id="hs-title">🏆 HI-SCORES</div>
+                <div id="hs-list"><div class="hs-loading">Yükleniyor...</div></div>
+            </div>
+            <div id="hs-close-wrap">
+                <button class="hs-close-btn" onclick="playMenuClick('close');hideHiScores()">✕ KAPAT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div id="settings-panel">
+        <div id="settings-inner">
+            <div id="settings-scroll">
+                <div id="settings-title">⚙ AYARLAR</div>
+
+                <!-- SES AYARLARI -->
+                <div class="settings-section">
+                    <div class="settings-section-title" id="st-sound-title">🔊 SES AYARLARI</div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-label" id="st-master-label"><span>🔊</span>Ana Ses</div>
+                        <div class="sf-slider-wrap">
+                            <input type="range" class="sf-slider" id="st-master-vol" min="0" max="100" value="15"
+                                   oninput="onSettingMasterVol(this.value)"/>
+                            <span class="sf-slider-val" id="st-master-val">15</span>
+                        </div>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-label" id="st-sfx-label"><span>💥</span>Efekt Sesleri</div>
+                        <div class="sf-slider-wrap">
+                            <input type="range" class="sf-slider" id="st-sfx-slider" min="0" max="100" value="100"
+                                   oninput="onSettingSfxVol(this.value)"/>
+                            <span class="sf-slider-val" id="st-sfx-val">100</span>
+                        </div>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-label" id="st-music-vol-label"><span>🎵</span>Müzik Sesi</div>
+                        <div class="sf-slider-wrap">
+                            <input type="range" class="sf-slider" id="st-music-vol" min="0" max="100" value="30"
+                                   oninput="onSettingMusicVol(this.value)"/>
+                            <span class="sf-slider-val" id="st-music-vol-val">30</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OYUN AYARLARI -->
+                <div class="settings-section">
+                    <div class="settings-section-title" id="st-game-title">🎮 OYUN AYARLARI</div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-label" id="st-traj-label"><span>🎯</span>Yörünge Çizgisi</div>
+                        <label class="sf-toggle">
+                            <input type="checkbox" id="st-traj-toggle" checked onchange="onSettingTrajectory(this.checked)"/>
+                            <span class="sf-toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-label" id="st-vib-label"><span>📳</span>Titreşim (Mobil)</div>
+                        <label class="sf-toggle">
+                            <input type="checkbox" id="st-vib-toggle" checked onchange="onSettingVibration(this.checked)"/>
+                            <span class="sf-toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="settings-row">
+                        <div class="settings-row-label" id="st-wake-label"><span>🔆</span>Ekranı Açık Tut</div>
+                        <label class="sf-toggle">
+                            <input type="checkbox" id="st-wake-toggle" onchange="onSettingWakeLock(this.checked)"/>
+                            <span class="sf-toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- DİL AYARLARI -->
+                <div class="settings-section">
+                    <div class="settings-section-title" id="st-lang-title">🌍 DİL / LANGUAGE</div>
+                    <div class="lang-grid" id="st-lang-grid">
+                        <button class="lang-grid-btn active" data-lang="tr" onclick=\"playMenuClick('lang');setLangFromSettings('tr')\">🇹🇷 Türkçe</button>
+                        <button class="lang-grid-btn" data-lang="en" onclick=\"playMenuClick('lang');setLangFromSettings('en')\">🇬🇧 English</button>
+                        <button class="lang-grid-btn" data-lang="de" onclick=\"playMenuClick('lang');setLangFromSettings('de')\">🇩🇪 Deutsch</button>
+                        <button class="lang-grid-btn" data-lang="fr" onclick=\"playMenuClick('lang');setLangFromSettings('fr')\">🇫🇷 Français</button>
+                        <button class="lang-grid-btn" data-lang="es" onclick=\"playMenuClick('lang');setLangFromSettings('es')\">🇪🇸 Español</button>
+                        <button class="lang-grid-btn" data-lang="ru" onclick=\"playMenuClick('lang');setLangFromSettings('ru')\">🇷🇺 Русский</button>
+                        <button class="lang-grid-btn" data-lang="zh" onclick=\"playMenuClick('lang');setLangFromSettings('zh')\">🇨🇳 中文</button>
+                        <button class="lang-grid-btn" data-lang="ja" onclick=\"playMenuClick('lang');setLangFromSettings('ja')\">🇯🇵 日本語</button>
+                        <button class="lang-grid-btn" data-lang="pt" onclick=\"playMenuClick('lang');setLangFromSettings('pt')\">🇧🇷 Português</button>
+                        <button class="lang-grid-btn" data-lang="ar" onclick=\"playMenuClick('lang');setLangFromSettings('ar')\">🇸🇦 العربية</button>
+                    </div>
+                </div>
+            </div>
+                <!-- ADMIN -->
+                <div class="settings-section">
+                    <div class="settings-section-title">🔐 ADMİNİSTRATOR</div>
+                    <button class="settings-admin-btn" onclick="openAdminModal()">⚠ YÖNETİCİ PANELİ</button>
+                </div>
+
+            <div id="settings-close-wrap">
+                <button class="settings-close-btn" id="st-close-btn" onclick="playMenuClick('close');hideSettings()">✕ KAPAT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div id="admin-modal">
+        <div id="admin-inner">
+            <div id="admin-title">🔐 ADMİN</div>
+            <input id="admin-pass-input" type="password" placeholder="••••••••"
+                   onkeydown="if(event.key==='Enter') checkAdminPass()"/>
+            <div id="admin-error"></div>
+            <div class="admin-btn-row">
+                <button class="admin-btn-danger" onclick="checkAdminPass()">GİRİŞ</button>
+                <button class="admin-btn-cancel" onclick="closeAdminModal()">İPTAL</button>
+            </div>
+
+            <div id="admin-confirm-box">
+                <div id="admin-confirm-text">⚠ Firebase'deki tüm skorlar silinecek.<br>Bu işlem geri alınamaz!</div>
+                <div class="admin-btn-row">
+                    <button class="admin-btn-danger" onclick="resetAllScores()">🗑 SKORLARI SİL</button>
+                    <button class="admin-btn-cancel" onclick="closeAdminModal()">VAZGEÇ</button>
+                </div>
+                <div id="admin-success"></div>
+            </div>
         </div>
     </div>
 
@@ -672,8 +1095,9 @@
                 <div class="go-stat"><div class="go-stat-label">SIRALAMA</div><div class="go-stat-val" id="go-rank">-</div></div>
             </div>
             <div class="go-btn-row">
-                <button class="go-btn-play" onclick="restartGame()">🔄 TEKRAR</button>
+                <button class="go-btn-play" onclick="playMenuClick('start');restartGame()">🔄 TEKRAR</button>
                 <button class="go-btn-hs" onclick="showHiScores()">🏆 SKORLAR</button>
+                <button class="go-btn-home" onclick="playMenuClick('close');goHomeFromGameOver()">🏠 MENÜ</button>
             </div>
         </div>
     </div>
@@ -692,6 +1116,16 @@
         <div class="hud-item"><div class="hud-label">PUAN</div><div class="hud-value" id="score">0</div></div>
         <div class="hud-item"><div class="hud-label">COMBO</div><div class="hud-value" id="combo" style="color:#ffcc00">1x</div></div>
         <div class="hud-item"><div class="hud-label">TOPLAR</div><div class="hud-value" id="balls" style="color:#00e5ff">6</div></div>
+        <button id="hud-music-btn" onclick="toggleMusicPopup(event)">🎵 <span id="hud-music-icon">♪</span></button>
+    </div>
+    <!-- Müzik popup -->
+    <div id="hud-music-popup">
+        <div class="hmp-label">🎵 MÜZİK SESİ</div>
+        <div class="hmp-row">
+            <input type="range" class="hmp-slider" id="hmp-slider" min="0" max="100" value="30" oninput="onHmpSlider(this.value)"/>
+            <span class="hmp-val" id="hmp-val">30</span>
+        </div>
+        <button class="hmp-mute-btn" id="hmp-mute-btn" onclick="toggleHmpMute()">🔇 MÜZİĞİ KAPAT</button>
     </div>
 
     <!-- MENU DRAWER -->
@@ -723,6 +1157,12 @@
             </button>
 
             <div class="menu-divider"></div>
+
+            <!-- AYARLAR -->
+            <button class="menu-item" onclick="menuSettings()">
+                <span class="menu-icon">⚙</span>
+                <span class="menu-label" id="menu-settings-label">AYARLAR</span>
+            </button>
 
             <!-- HI-SCORES -->
             <button class="menu-item" onclick="menuHiScores()">
@@ -766,8 +1206,16 @@
         <p id="ov-p3">🃏 Kart vurulunca açılır, top TUZ BUZ olur!</p>
         <p id="ov-p4">🔥 Combo: 1 duvar=2x, 2 duvar=4x, 3 duvar=6x puan!</p>
         <p id="ov-p5">🏐 Her seviyede top hakkı = kart sayısının 1.5 katı</p>
-        <button class="btn" id="ov-btn" onclick="startGame()">BAŞLA!</button>
+        <button class="btn" id="ov-btn" onclick="playMenuClick('start');startGame()">BAŞLA!</button>
     </div>
+    <audio id="bgMusicEl" src="music/gameplay.mp3" loop preload="auto"></audio>
+    <audio id="menuMusicEl" src="music/menu.mp3" loop preload="auto"></audio>
+    <audio id="level2MusicEl" src="music/level2.mp3" loop preload="auto"></audio>
+    <audio id="level3MusicEl" src="music/level3.mp3" loop preload="auto"></audio>
+    <audio id="level4MusicEl" src="music/level4.mp3" loop preload="auto"></audio>
+    <audio id="level5MusicEl" src="music/level5.mp3" loop preload="auto"></audio>
+    <audio id="level6MusicEl" src="music/level6.mp3" loop preload="auto"></audio>
+    <audio id="level7MusicEl" src="music/level7.mp3" loop preload="auto"></audio>
     <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -787,11 +1235,11 @@
         let masterVolume = 0.15;
 
         function playTone(freq, type, duration, vol=0.1) {
-            if(!audioCtx) return;
+            if(!audioCtx || !sfxEnabled) return;
             try {
                 let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
                 osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(vol * masterVolume, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol * masterVolume * sfxVolume, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.start(); osc.stop(audioCtx.currentTime + duration);
@@ -800,119 +1248,206 @@
 
         // 🎵 GELISTIRILMIS SES EFEKTLERI
 
-        // 1. Sapan gerdirme sesi (yukarı doğru zil efekti)
+        // 1. Sapan gerdirme sesi - lastik esneme
         function playStretchSound(pullRatio) {
-            if(!audioCtx) return;
+            if(!audioCtx || !sfxEnabled) return;
             try {
+                // Lastik creaking: düşük frekanslı, organik
                 let osc = audioCtx.createOscillator();
                 let gain = audioCtx.createGain();
                 let filter = audioCtx.createBiquadFilter();
+                let lfo = audioCtx.createOscillator();
+                let lfoGain = audioCtx.createGain();
+
+                // LFO ile hafif titreşim (lastik gerilme titremesi)
+                lfo.type = 'sine';
+                lfo.frequency.value = 8 + pullRatio * 12;
+                lfoGain.gain.value = 15 * pullRatio;
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
 
                 osc.type = 'sawtooth';
-                // Gerdirme oranına göre frekans artar
-                let baseFreq = 150 + (pullRatio * 400);
+                let baseFreq = 60 + (pullRatio * 180);
                 osc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(baseFreq + 100, audioCtx.currentTime + 0.1);
+                osc.frequency.linearRampToValueAtTime(baseFreq * 1.15, audioCtx.currentTime + 0.1);
 
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(800 + pullRatio * 2000, audioCtx.currentTime);
+                filter.type = 'bandpass';
+                filter.frequency.value = 200 + pullRatio * 600;
+                filter.Q.value = 4;
 
-                gain.gain.setValueAtTime(0.08 * masterVolume, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.06 * masterVolume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.12);
 
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.15);
+                osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                lfo.start(); osc.start();
+                osc.stop(audioCtx.currentTime + 0.12);
+                lfo.stop(audioCtx.currentTime + 0.12);
+
+                // Ek harmonik squeak
+                if (pullRatio > 0.5) {
+                    let sq = audioCtx.createOscillator();
+                    let sqg = audioCtx.createGain();
+                    sq.type = 'triangle';
+                    sq.frequency.value = 400 + pullRatio * 300;
+                    sqg.gain.setValueAtTime(0.03 * masterVolume * pullRatio, audioCtx.currentTime);
+                    sqg.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.08);
+                    sq.connect(sqg); sqg.connect(audioCtx.destination);
+                    sq.start(); sq.stop(audioCtx.currentTime + 0.08);
+                }
             } catch(e){}
         }
 
-        // 2. Atis sesi (whoosh + snap)
+        // 2. Atis sesi - lastik bırakma snap + whoosh
         function playShootSound(velocity) {
-            if(!audioCtx) return;
+            if(!audioCtx || !sfxEnabled) return;
             try {
-                // Noise buffer for whoosh
-                let bufferSize = audioCtx.sampleRate * 0.3;
+                // Lastik snap: ani yüksek frekanslı click
+                let snapBuf = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * 0.02), audioCtx.sampleRate);
+                let snapData = snapBuf.getChannelData(0);
+                for(let i = 0; i < snapData.length; i++) {
+                    snapData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/snapData.length, 3);
+                }
+                let snapSrc = audioCtx.createBufferSource();
+                snapSrc.buffer = snapBuf;
+                let snapFilter = audioCtx.createBiquadFilter();
+                snapFilter.type = 'highpass'; snapFilter.frequency.value = 2000;
+                let snapGain = audioCtx.createGain();
+                snapGain.gain.setValueAtTime(0.4 * masterVolume, audioCtx.currentTime);
+                snapGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.02);
+                snapSrc.connect(snapFilter); snapFilter.connect(snapGain); snapGain.connect(audioCtx.destination);
+                snapSrc.start();
+
+                // Bungee ping (lastik titreşimi)
+                let ping = audioCtx.createOscillator();
+                let pingGain = audioCtx.createGain();
+                ping.type = 'triangle';
+                ping.frequency.setValueAtTime(300 + velocity * 2, audioCtx.currentTime);
+                ping.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.25);
+                pingGain.gain.setValueAtTime(0.18 * masterVolume, audioCtx.currentTime);
+                pingGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.25);
+                ping.connect(pingGain); pingGain.connect(audioCtx.destination);
+                ping.start(); ping.stop(audioCtx.currentTime + 0.25);
+
+                // Whoosh (hava kesimi)
+                let bufferSize = audioCtx.sampleRate * 0.25;
                 let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 let data = buffer.getChannelData(0);
                 for(let i=0; i<bufferSize; i++) {
-                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/bufferSize, 2);
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/bufferSize, 1.8);
                 }
-
                 let noise = audioCtx.createBufferSource();
                 noise.buffer = buffer;
-                let noiseGain = audioCtx.createGain();
                 let noiseFilter = audioCtx.createBiquadFilter();
-
                 noiseFilter.type = 'bandpass';
-                noiseFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
-                noiseFilter.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.3);
-                noiseFilter.Q.value = 1;
-
-                noiseGain.gain.setValueAtTime(0.2 * masterVolume, audioCtx.currentTime);
+                noiseFilter.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.02);
+                noiseFilter.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.25);
+                noiseFilter.Q.value = 2;
+                let noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(0.15 * masterVolume, audioCtx.currentTime + 0.02);
                 noiseGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
-
-                noise.connect(noiseFilter);
-                noiseFilter.connect(noiseGain);
-                noiseGain.connect(audioCtx.destination);
-                noise.start();
-
-                // Snap sound (high freq ping)
-                let snap = audioCtx.createOscillator();
-                let snapGain = audioCtx.createGain();
-                snap.type = 'sine';
-                snap.frequency.setValueAtTime(1200, audioCtx.currentTime);
-                snap.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
-                snapGain.gain.setValueAtTime(0.15 * masterVolume, audioCtx.currentTime);
-                snapGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
-                snap.connect(snapGain);
-                snapGain.connect(audioCtx.destination);
-                snap.start();
-                snap.stop(audioCtx.currentTime + 0.15);
+                noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+                noise.start(audioCtx.currentTime + 0.02);
             } catch(e){}
         }
 
-        // 3. Duvar sekme sesi (boing/spring)
-        function playBounceSound(bounceCount) {
-            if(!audioCtx) return;
+        // 3. Duvar sekme sesi - metalik, ıslak, slimy
+        function playWallBounceSound(bounceCount, speedMult) {
+            if(!audioCtx || !sfxEnabled) return;
             try {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                let filter = audioCtx.createBiquadFilter();
+                let fireRatio = speedMult > 3 ? Math.min(1, (speedMult - 3) / 7) : 0;
 
-                // Her sekmeyle birlikte perde yükselir
-                let freq = 200 + (bounceCount * 150);
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(freq * 0.7, audioCtx.currentTime + 0.12);
+                // Metalik çarpma: noise burst + metalik ring
+                let bufSize = Math.floor(audioCtx.sampleRate * 0.08);
+                let buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+                let data = buf.getChannelData(0);
+                for(let i = 0; i < bufSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/bufSize, 1.5);
+                }
+                let noise = audioCtx.createBufferSource();
+                noise.buffer = buf;
+                let nf = audioCtx.createBiquadFilter();
+                nf.type = 'bandpass';
+                nf.frequency.value = 1200 + bounceCount * 80;
+                nf.Q.value = 15;
+                let ng = audioCtx.createGain();
+                ng.gain.setValueAtTime(0.18 * masterVolume, audioCtx.currentTime);
+                ng.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.08);
+                noise.connect(nf); nf.connect(ng); ng.connect(audioCtx.destination);
+                noise.start();
 
-                filter.type = 'bandpass';
-                filter.frequency.value = freq;
-                filter.Q.value = 8;
+                // Islak/slimy düşük frekanslı thud
+                let thud = audioCtx.createOscillator();
+                let tg = audioCtx.createGain();
+                let tf = audioCtx.createBiquadFilter();
+                thud.type = 'sine';
+                thud.frequency.setValueAtTime(80 + fireRatio * 40, audioCtx.currentTime);
+                thud.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.06);
+                tf.type = 'lowpass'; tf.frequency.value = 300;
+                tg.gain.setValueAtTime(0.25 * masterVolume, audioCtx.currentTime);
+                tg.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                thud.connect(tf); tf.connect(tg); tg.connect(audioCtx.destination);
+                thud.start(); thud.stop(audioCtx.currentTime + 0.1);
 
-                gain.gain.setValueAtTime(0.12 * masterVolume, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                // Metalik zing (yüksek harmonik)
+                let zing = audioCtx.createOscillator();
+                let zg = audioCtx.createGain();
+                zing.type = 'sawtooth';
+                zing.frequency.setValueAtTime(900 + bounceCount * 120 + fireRatio * 400, audioCtx.currentTime);
+                zing.frequency.exponentialRampToValueAtTime(600 + bounceCount * 60, audioCtx.currentTime + 0.12);
+                let zf = audioCtx.createBiquadFilter();
+                zf.type = 'bandpass'; zf.frequency.value = 1800; zf.Q.value = 5;
+                zg.gain.setValueAtTime(0.1 * masterVolume, audioCtx.currentTime);
+                zg.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.15);
+                zing.connect(zf); zf.connect(zg); zg.connect(audioCtx.destination);
+                zing.start(); zing.stop(audioCtx.currentTime + 0.15);
 
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.15);
+                // Ateş topunda ekstra crackle
+                if (fireRatio > 0.5) {
+                    let crack = audioCtx.createOscillator();
+                    let cg = audioCtx.createGain();
+                    crack.type = 'sawtooth';
+                    crack.frequency.setValueAtTime(2000 + Math.random()*1000, audioCtx.currentTime);
+                    crack.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.05);
+                    cg.gain.setValueAtTime(0.08 * masterVolume * fireRatio, audioCtx.currentTime);
+                    cg.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.05);
+                    crack.connect(cg); cg.connect(audioCtx.destination);
+                    crack.start(); crack.stop(audioCtx.currentTime + 0.05);
+                }
+            } catch(e){}
+        }
 
-                // Ek rezonans
-                setTimeout(() => {
-                    let res = audioCtx.createOscillator();
-                    let resGain = audioCtx.createGain();
-                    res.type = 'sine';
-                    res.frequency.value = freq * 2;
-                    resGain.gain.setValueAtTime(0.05 * masterVolume, audioCtx.currentTime);
-                    resGain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.08);
-                    res.connect(resGain);
-                    resGain.connect(audioCtx.destination);
-                    res.start();
-                    res.stop(audioCtx.currentTime + 0.08);
-                }, 30);
+        // Top-top çarpışma sesi (metal bilye)
+        function playBallBallSound() {
+            if(!audioCtx || !sfxEnabled) return;
+            try {
+                // Metal bilye çarpışması: yüksek frekanslı metalik ping + düşük thud
+                let bufSize = Math.floor(audioCtx.sampleRate * 0.05);
+                let buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+                let data = buf.getChannelData(0);
+                for(let i = 0; i < bufSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i/bufSize, 2);
+                }
+                let noise = audioCtx.createBufferSource();
+                noise.buffer = buf;
+                let nf = audioCtx.createBiquadFilter();
+                nf.type = 'highpass'; nf.frequency.value = 3000;
+                let ng = audioCtx.createGain();
+                ng.gain.setValueAtTime(0.2 * masterVolume, audioCtx.currentTime);
+                ng.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.05);
+                noise.connect(nf); nf.connect(ng); ng.connect(audioCtx.destination);
+                noise.start();
+
+                // Metalik ring
+                [2400, 3600, 4800].forEach((freq, i) => {
+                    let osc = audioCtx.createOscillator();
+                    let g = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    g.gain.setValueAtTime((0.15 - i*0.04) * masterVolume, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.18 - i*0.04);
+                    osc.connect(g); g.connect(audioCtx.destination);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.18 - i*0.04);
+                });
             } catch(e){}
         }
 
@@ -1165,6 +1700,235 @@
             }
         }
 
+
+        // ===== MEYVE EŞLEŞMEEFFEKTİ =====
+        let fruitParticles = [];
+
+        class FruitParticle {
+            constructor(x, y, targetX, targetY, icon, delay) {
+                this.x = x; this.y = y;
+                this.startX = x; this.startY = y;
+                this.targetX = targetX; this.targetY = targetY;
+                this.icon = icon;
+                this.delay = delay; // frame delay başlamadan önce
+                this.t = 0; // 0→1 arası ilerleme
+                this.size = 28;
+                this.angle = Math.random() * Math.PI * 2;
+                this.spinSpeed = (Math.random() - 0.5) * 0.4;
+                this.phase = 'fly'; // fly → explode → done
+                this.alpha = 1;
+                this.explodeParticles = [];
+                this.active = true;
+                // Kontrol noktası - yay çizerek gelsin
+                this.cpX = (x + targetX) / 2 + (Math.random() - 0.5) * 120;
+                this.cpY = Math.min(y, targetY) - 60 - Math.random() * 80;
+            }
+
+            _spawnExplode() {
+                // Birleşme anı: aşağı düşüş + büyüme fazına geç
+                this.phase = 'fall';
+                this.vy = -1.5;       // önce hafif yukarı
+                this.gravity = 0.35;  // sonra aşağı çekiş
+                this.fallSize = this.size;
+                this.fallAlpha = 1;
+                this.explodeParticles = [];
+                this.exploded = false;
+            }
+
+            _doExplode() {
+                this.exploded = true;
+                this.phase = 'burst';
+                this.burstAlpha = 1;
+                this.burstSize = this.fallSize;
+
+                // Parçalar yerçekimiyle aşağı dağılsın
+                const colors = ['#ffcc00','#ff3366','#00ff88','#00e5ff','#ffffff','#ff9900','#cc00ff'];
+                for (let i = 0; i < 32; i++) {
+                    let angle = (i / 32) * Math.PI * 2;
+                    let speed = 4 + Math.random() * 9;
+                    this.explodeParticles.push({
+                        x: this.x, y: this.y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - 3,
+                        gravity: 0.25 + Math.random() * 0.2,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        size: 5 + Math.random() * 8,
+                        alpha: 1,
+                        rot: Math.random() * Math.PI * 2,
+                        rotSpeed: (Math.random() - 0.5) * 0.3
+                    });
+                }
+                // Shockwave
+                for (let i = 0; i < 20; i++) {
+                    let angle = Math.random() * Math.PI * 2;
+                    let speed = Math.random() * 8 + 4;
+                    fxParticles.push(new FXParticle(
+                        this.x, this.y,
+                        Math.cos(angle) * speed, Math.sin(angle) * speed,
+                        ['#ffcc00','#ffffff','#00ff88','#ff3366'][Math.floor(Math.random()*4)], 5
+                    ));
+                }
+                // Ekstra emoji parçacıkları saçılsın
+                for (let i = 0; i < 6; i++) {
+                    let angle = Math.random() * Math.PI * 2;
+                    let sp = 3 + Math.random() * 5;
+                    this.explodeParticles.push({
+                        x: this.x, y: this.y,
+                        vx: Math.cos(angle) * sp,
+                        vy: Math.sin(angle) * sp - 4,
+                        gravity: 0.3,
+                        color: null, // null = emoji çiz
+                        icon: this.icon,
+                        size: 16 + Math.random() * 10,
+                        alpha: 1,
+                        rot: Math.random() * Math.PI * 2,
+                        rotSpeed: (Math.random() - 0.5) * 0.25
+                    });
+                }
+            }
+
+            update() {
+                if (!this.active) return;
+                if (this.delay > 0) { this.delay--; return; }
+
+                if (this.phase === 'fly') {
+                    this.t += 0.045;
+                    this.angle += this.spinSpeed;
+                    if (this.t >= 1) {
+                        this.t = 1;
+                        this.x = this.targetX;
+                        this.y = this.targetY;
+                        this.phase = 'merge'; // birleşme anı
+                        this.mergeTimer = 18; // kısa bekle
+                        this.size = 44;
+                    } else {
+                        let mt = 1 - this.t;
+                        this.x = mt*mt*this.startX + 2*mt*this.t*this.cpX + this.t*this.t*this.targetX;
+                        this.y = mt*mt*this.startY + 2*mt*this.t*this.cpY + this.t*this.t*this.targetY;
+                        this.size = 28 + this.t * 16;
+                    }
+                } else if (this.phase === 'merge') {
+                    // Kısa parlama - sadece 1. parçacık patlasın
+                    this.mergeTimer--;
+                    this.size += 1.5;
+                    if (this.mergeTimer <= 0) {
+                        this._spawnExplode();
+                    }
+                } else if (this.phase === 'fall') {
+                    // Yerçekimiyle aşağı düş, büyü, solar
+                    this.vy += this.gravity;
+                    this.y += this.vy;
+                    this.fallSize += 2.5;
+                    this.fallAlpha -= 0.022;
+                    this.angle += 0.04;
+                    if (this.fallSize > 90 || this.fallAlpha <= 0.15) {
+                        this._doExplode();
+                    }
+                } else if (this.phase === 'burst') {
+                    this.burstAlpha -= 0.055;
+                    this.burstSize += 6;
+                    this.explodeParticles.forEach(p => {
+                        p.vy += p.gravity;
+                        p.x += p.vx; p.y += p.vy;
+                        p.vx *= 0.97;
+                        p.alpha -= 0.028;
+                        p.rot += p.rotSpeed;
+                        p.size *= 0.97;
+                    });
+                    this.explodeParticles = this.explodeParticles.filter(p => p.alpha > 0);
+                    if (this.burstAlpha <= 0 && this.explodeParticles.length === 0) {
+                        this.active = false;
+                    }
+                }
+            }
+
+            draw() {
+                if (!this.active) return;
+                ctx.save();
+
+                if (this.phase === 'fly' || this.phase === 'merge') {
+                    ctx.globalAlpha = 1;
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.angle);
+                    ctx.shadowColor = '#ffcc00';
+                    ctx.shadowBlur = 20 + this.t * 25;
+                    ctx.font = `${this.size}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.icon, 0, 0);
+
+                } else if (this.phase === 'fall') {
+                    ctx.globalAlpha = this.fallAlpha;
+                    ctx.translate(this.x, this.y);
+                    ctx.rotate(this.angle);
+                    ctx.shadowColor = '#ffcc00';
+                    ctx.shadowBlur = 40;
+                    ctx.font = `${this.fallSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.icon, 0, 0);
+
+                } else if (this.phase === 'burst') {
+                    // Büyüyerek solar emoji
+                    if (this.burstAlpha > 0) {
+                        ctx.globalAlpha = Math.max(0, this.burstAlpha);
+                        ctx.translate(this.x, this.y);
+                        ctx.shadowColor = '#ffcc00';
+                        ctx.shadowBlur = 50;
+                        ctx.font = `${this.burstSize}px sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(this.icon, 0, 0);
+                        ctx.restore();
+                        ctx.save();
+                    }
+                    // Parçacıklar
+                    this.explodeParticles.forEach(p => {
+                        ctx.save();
+                        ctx.globalAlpha = Math.max(0, p.alpha);
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate(p.rot);
+                        if (p.color === null) {
+                            // Emoji parça
+                            ctx.shadowColor = '#ffcc00';
+                            ctx.shadowBlur = 12;
+                            ctx.font = `${p.size}px sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(p.icon, 0, 0);
+                        } else {
+                            ctx.fillStyle = p.color;
+                            ctx.shadowColor = p.color;
+                            ctx.shadowBlur = 10;
+                            ctx.beginPath();
+                            ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.restore();
+                    });
+                }
+                ctx.restore();
+            }
+        }
+
+        function spawnFruitMatch(card1, card2) {
+            const midX = (card1.x + card2.x) / 2;
+            const midY = (card1.y + card2.y) / 2;
+            const icon = card1.icon;
+
+            // Kart 1'den ortaya
+            fruitParticles.push(new FruitParticle(card1.x, card1.y, midX, midY, icon, 0));
+            // Kart 2'den ortaya - biraz gecikmeli
+            fruitParticles.push(new FruitParticle(card2.x, card2.y, midX, midY, icon, 5));
+
+            // Ekstra küçük meyveler etraftan gelsin
+            for (let i = 0; i < 3; i++) {
+                let ox = midX + (Math.random() - 0.5) * 200;
+                let oy = midY + (Math.random() - 0.5) * 150;
+                fruitParticles.push(new FruitParticle(ox, oy, midX, midY, icon, 8 + i * 4));
+            }
+        }
+
         class FXParticle {
             constructor(x, y, vx, vy, color, size=4) {
                 this.x = x; this.y = y; this.vx = vx; this.vy = vy;
@@ -1252,58 +2016,128 @@
             constructor(x, y, vx, vy) {
                 this.x = x; this.y = y; this.vx = vx; this.vy = vy;
                 this.radius = 9; this.active = true;
-                this.bounces = 0; // Duvar çarpma sayisi
-                this.hitFirstCard = false; // Ilk karti vurdu mu?
+                this.bounces = 0;
+                this.hitFirstCard = false;
+                this.speedMult = 1.0; // Her duvara çarpınca 1.2x artar
+                this.wallBouncesSinceCard = 0; // 10x sonrası duvardan duvara sayacı
             }
+
+            getFireRatio() {
+                // 1x-3x: 0, 3x-10x: 0->1
+                let s = this.speedMult;
+                if (s <= 3) return 0;
+                return Math.min(1, (s - 3) / 7);
+            }
+
+            getBallColor(ratio) {
+                // ratio 0: cyan/white, ratio 1: full fire
+                if (ratio <= 0) return { inner: '#ffffff', outer: '#00e5ff', glow: '#00e5ff' };
+                // 0→0.4: white→orange glow starts
+                // 0.4→1: orange→full fire (deep red core, orange mid, yellow edge)
+                let r1, g1, b1, r2, g2, b2;
+                if (ratio < 0.4) {
+                    let t = ratio / 0.4;
+                    r1 = Math.round(255); g1 = Math.round(255 - t*100); b1 = Math.round(255 - t*255);
+                    r2 = Math.round(0 + t*255); g2 = Math.round(229 - t*100); b2 = Math.round(255 - t*255);
+                } else {
+                    let t = (ratio - 0.4) / 0.6;
+                    r1 = Math.round(255); g1 = Math.round(155 - t*100); b1 = 0;
+                    r2 = Math.round(255 - t*100); g2 = Math.round(129 - t*100); b2 = 0;
+                }
+                let glowR = ratio < 0.4 ? Math.round(255 * (ratio/0.4)) : 255;
+                let glowG = Math.round(100 - ratio * 100);
+                return {
+                    inner: `rgb(${r1},${g1},${b1})`,
+                    outer: `rgb(${r2},${g2},${b2})`,
+                    glow: `rgb(${glowR},${glowG},0)`
+                };
+            }
+
             update() {
                 if (!this.active) return;
                 this.x += this.vx; this.y += this.vy;
+                let bounced = false;
 
                 if (this.x + this.radius > WALL.right) {
                     this.x = WALL.right - this.radius; this.vx *= -BOUNCE_DAMPING;
-                    this.bounces++;
-                    playBounceSound(this.bounces);
+                    this._onWallBounce(); bounced = true;
                 }
                 if (this.x - this.radius < WALL.left) {
                     this.x = WALL.left + this.radius; this.vx *= -BOUNCE_DAMPING;
-                    this.bounces++;
-                    playBounceSound(this.bounces);
+                    this._onWallBounce(); bounced = true;
                 }
                 if (this.y - this.radius < WALL.top) {
                     this.y = WALL.top + this.radius; this.vy *= -BOUNCE_DAMPING;
-                    this.bounces++;
-                    playBounceSound(this.bounces);
+                    this._onWallBounce(); bounced = true;
                 }
                 if (this.y + this.radius > WALL.bottom) {
                     this.y = WALL.bottom - this.radius; this.vy *= -BOUNCE_DAMPING;
-                    this.bounces++;
-                    playBounceSound(this.bounces);
+                    this._onWallBounce(); bounced = true;
+                }
+
+                // 10x+ sonrası duvardan duvara: kaybolsun
+                if (this.speedMult >= 10 && bounced) {
+                    this.wallBouncesSinceCard++;
+                    if (this.wallBouncesSinceCard >= 2) {
+                        this.destroy();
+                        return;
+                    }
                 }
 
                 if (this.x < -100 || this.x > W+100 || this.y < -100 || this.y > H+100) {
                     this.active = false;
                 }
             }
+
+            _onWallBounce() {
+                this.bounces++;
+                // Hızlandır
+                this.speedMult *= 1.2;
+                let speed = Math.hypot(this.vx, this.vy);
+                let newSpeed = speed * 1.2;
+                if (speed > 0) {
+                    this.vx = (this.vx / speed) * newSpeed;
+                    this.vy = (this.vy / speed) * newSpeed;
+                }
+                playWallBounceSound(this.bounces, this.speedMult);
+            }
+
+            hitCard() {
+                // Karta çarptı - wallBouncesSinceCard sıfırla
+                this.wallBouncesSinceCard = 0;
+            }
+
             destroy() {
                 this.active = false;
+                let fireRatio = this.getFireRatio();
+                let colors = fireRatio > 0.5
+                    ? ['#ff6600', '#ff3300', '#ffcc00', '#ffffff']
+                    : ['#00e5ff', '#ffffff', '#ffcc00', '#ff3366'];
                 for(let i=0; i<20; i++) {
                     let angle = Math.random() * Math.PI * 2;
                     let speed = Math.random() * 8 + 3;
-                    let colors = ['#00e5ff', '#ffffff', '#ffcc00', '#ff3366'];
-                    fxParticles.push(new FXParticle(this.x, this.y, 
-                        Math.cos(angle)*speed, Math.sin(angle)*speed, 
+                    fxParticles.push(new FXParticle(this.x, this.y,
+                        Math.cos(angle)*speed, Math.sin(angle)*speed,
                         colors[Math.floor(Math.random()*colors.length)], 5));
                 }
             }
+
             draw() {
                 if (!this.active) return;
+                let fireRatio = this.getFireRatio();
+                let col = this.getBallColor(fireRatio);
                 ctx.save(); ctx.translate(this.x, this.y);
                 ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI*2);
                 let grad = ctx.createRadialGradient(-4, -4, 0, 0, 0, this.radius);
-                grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#00e5ff');
+                grad.addColorStop(0, col.inner); grad.addColorStop(1, col.outer);
                 ctx.fillStyle = grad; ctx.fill();
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-                ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 15;
+                ctx.strokeStyle = fireRatio > 0.3 ? '#ffcc00' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.shadowColor = col.glow; ctx.shadowBlur = fireRatio > 0 ? 20 + fireRatio * 20 : 15;
+                // Fire aura
+                if (fireRatio > 0) {
+                    ctx.beginPath(); ctx.arc(0, 0, this.radius * (1 + fireRatio * 0.5), 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(255,${Math.round(100*(1-fireRatio))},0,${fireRatio * 0.25})`; ctx.fill();
+                }
                 ctx.beginPath(); ctx.arc(0, 0, this.radius*0.5, 0, Math.PI*2);
                 ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fill();
                 ctx.restore();
@@ -1357,13 +2191,18 @@
         function calculateCardPositions(count, layoutType) {
             let positions = [];
 
-            // Sapanın sağından itibaren kart alanı başlasın
-            let slingshotZone = slingshot.x + Math.min(W * 0.12, 80);
-            let margin = 10;
-            let areaLeft  = slingshotZone;
+            // Sapanın sağından güvenli mesafe bırak
+            let slingshotZone = slingshot.x + Math.min(W * 0.16, 100);
+            let margin = 12;
+            let areaLeft  = slingshotZone + margin;
             let areaRight = WALL.right - margin;
             let areaTop   = WALL.top + margin;
             let areaBottom = WALL.bottom - margin;
+
+            // Sapan dikey konumu: kartlar sapanın üstüne gelmesin
+            let slingSafeBottom = slingshot.y + 60; // sapanın alt kısmı
+            let slingSafeTop = slingshot.y - 60;    // sapanın üst kısmı
+            // Kart alanını sapanın etkilemediği sağ bölgeye sınırla (areaLeft zaten sapanın sağında)
 
             let areaW = areaRight - areaLeft;
             let areaH = areaBottom - areaTop;
@@ -1386,15 +2225,20 @@
                 rows = Math.ceil(count / cols);
             }
 
+            // Kart boyutunu hem genişlik hem yüksekliğe göre hesapla
             let maxByW = (areaW - gap * (cols - 1)) / cols;
             let maxByH = (areaH - gap * (rows - 1)) / rows;
-            let cardSize = Math.min(maxByW, maxByH, 70);
-            cardSize = Math.max(cardSize, 28);
+            let cardSize = Math.min(maxByW, maxByH, 68);
+            cardSize = Math.max(cardSize, 26);
 
             let gridW = cols * cardSize + (cols - 1) * gap;
             let gridH = rows * cardSize + (rows - 1) * gap;
             let startX = centerX - gridW / 2 + cardSize / 2;
             let startY = centerY - gridH / 2 + cardSize / 2;
+
+            // Izgara sağa taşarsa sıkıştır
+            if (startX - cardSize/2 < areaLeft) startX = areaLeft + cardSize/2;
+            if (startX + gridW - cardSize/2 > areaRight) startX = areaRight - gridW + cardSize/2;
 
             for (let i = 0; i < count; i++) {
                 let c = i % cols;
@@ -1409,7 +2253,8 @@
         }
 
         function initLevel(level) {
-            cards = []; projectiles = []; fxParticles = [];
+            cards = []; projectiles = []; fxParticles = []; fruitParticles = [];
+            window._fadingForGameOver = false;
             canShoot = true; levelCleared = false;
             firstHitCard = null; matchedPairs = 0;
             currentCombo = 1; shotsFired = 0;
@@ -1462,9 +2307,40 @@
             showTicker(t('rememberCards', t(layout.nameKey)));
 
             updateHUD();
+            // Level geçişinde fade out → fade in
+            stopBgMusic(() => {
+                if (gameState === 'playing') startBgMusic();
+            });
         }
 
         function checkCollisions() {
+            // Top-top çarpışması (fizik)
+            for (let i = 0; i < projectiles.length; i++) {
+                for (let j = i + 1; j < projectiles.length; j++) {
+                    let a = projectiles[i], b = projectiles[j];
+                    if (!a.active || !b.active) continue;
+                    let dx = b.x - a.x, dy = b.y - a.y;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist < a.radius + b.radius && dist > 0) {
+                        // Ayrıştır
+                        let overlap = (a.radius + b.radius - dist) / 2;
+                        let nx = dx / dist, ny = dy / dist;
+                        a.x -= nx * overlap; a.y -= ny * overlap;
+                        b.x += nx * overlap; b.y += ny * overlap;
+
+                        // Hız değişimi (elastik çarpışma, eşit kütle)
+                        let dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+                        let dot = dvx * nx + dvy * ny;
+                        if (dot > 0) {
+                            let impulse = dot;
+                            a.vx -= impulse * nx; a.vy -= impulse * ny;
+                            b.vx += impulse * nx; b.vy += impulse * ny;
+                        }
+                        playBallBallSound();
+                    }
+                }
+            }
+
             for (let pIdx = projectiles.length - 1; pIdx >= 0; pIdx--) {
                 let p = projectiles[pIdx];
                 if (!p.active) continue;
@@ -1473,6 +2349,7 @@
                     if (!c.alive || c.matched) continue;
 
                     if (c.checkHit(p.x, p.y)) {
+                        p.hitCard(); // wallBouncesSinceCard sıfırla
                         p.destroy();
 
                         if (!c.revealed) {
@@ -1523,10 +2400,13 @@
                                         showTicker(t('matched', c.icon, totalPoints, speedLabel));
                                     }
 
-                                    // Efektler
-                                    for(let i=0; i<60; i++) {
+                                    // Meyve eşleşme efekti
+                                    spawnFruitMatch(firstHitCard, c);
+
+                                    // Arka plan parçacıkları
+                                    for(let i=0; i<40; i++) {
                                         let angle = Math.random() * Math.PI * 2;
-                                        let speed = Math.random() * 12 + 4;
+                                        let speed = Math.random() * 10 + 3;
                                         let colors = ['#00ff88', '#ffffff', '#ffcc00', '#00e5ff'];
                                         let col = colors[Math.floor(Math.random()*colors.length)];
                                         fxParticles.push(new FXParticle(
@@ -1590,8 +2470,15 @@
                 });
             }
 
-            // Game over kontrolu - sadece gercekten top 0 ise VE reveal bitince
-            if (ballsLeft === 0 && matchedPairs < totalPairs && !levelCleared && gameState === 'playing' && revealTimer <= 0 && totalPairs > 0) {
+            // Top 2 kalınca müziği fade etmeye başla
+            if (ballsLeft === 2 && matchedPairs < totalPairs && !levelCleared && gameState === 'playing' && !window._fadingForGameOver) {
+                window._fadingForGameOver = true;
+                fadeOutAllMusic(1500);
+            }
+            if (ballsLeft > 2) window._fadingForGameOver = false;
+
+            // Game over kontrolu - top 0 olunca VE havada top kalmayinca
+            if (ballsLeft <= 0 && matchedPairs < totalPairs && !levelCleared && gameState === 'playing' && revealTimer <= 0 && totalPairs > 0 && projectiles.length === 0) {
                 levelCleared = true;
                 playGameOverSound();
                 // Skoru kaydet, sonra game over ekranı göster
@@ -1645,7 +2532,7 @@
                     let simVy = Math.sin(angle) * velocity;
                     let simX = sx, simY = sy - 8;
 
-                    for (let i = 1; i <= 30; i++) {
+                    if (trajectoryEnabled) for (let i = 1; i <= 30; i++) {
                         simX += simVx * 0.6; simY += simVy * 0.6;
                         if (simX > WALL.right) { simX = WALL.right; simVx *= -BOUNCE_DAMPING; }
                         if (simX < WALL.left) { simX = WALL.left; simVx *= -BOUNCE_DAMPING; }
@@ -1676,6 +2563,8 @@
                 projectiles = projectiles.filter(p => p.active);
 
                 fxParticles.forEach((f, i) => { f.update(); f.draw(); if(f.alpha <= 0) fxParticles.splice(i, 1); });
+                fruitParticles.forEach(fp => { fp.update(); fp.draw(); });
+                fruitParticles = fruitParticles.filter(fp => fp.active);
 
                 checkCollisions();
                 drawSlingshot();
@@ -1765,102 +2654,354 @@
         const STRINGS = {
             tr: {
                 tagline: 'At · Sektir · Eşleştir',
-                h1: 'Sapanla at, duvarlardan sektir!',
-                h2: 'İki aynı kartı eşleştir!',
-                h3: 'Kombo ile bonus top kazan!',
-                h4: 'Hafızanı kullan, seviye atla!',
-                startBtn: 'BAŞLA!',
-                ovTitle: 'SLING FIND',
+                h1: 'Sapanla at, duvarlardan sektir!', h2: 'İki aynı kartı eşleştir!',
+                h3: 'Kombo ile bonus top kazan!', h4: 'Hafızanı kullan, seviye atla!',
+                startBtn: 'BAŞLA!', ovTitle: 'SLING FIND',
                 ovP1: '🎯 Sapanla at, duvarlardan sek, kartları eşleştir!',
                 ovP2: '🧱 Top duvara değip karta değmezse YOK OLUR!',
                 ovP3: '🃏 Kart vurulunca açılır, top paramparça olur!',
                 ovP4: '🔥 Combo: 1 duvar=2x, 2 duvar=4x, 3 duvar=6x puan!',
-                ovP5: '🏐 Top hakkı = kart sayısının 1.5 katı',
-                ovBtn: 'BAŞLA!',
+                ovP5: '🏐 Top hakkı = kart sayısının 1.5 katı', ovBtn: 'BAŞLA!',
                 hudLevel: 'SEVİYE', hudPairs: 'EŞLEŞME', hudScore: 'PUAN', hudCombo: 'COMBO', hudBalls: 'TOPLAR',
-                // layout names
                 layoutSquare: 'KARE', layoutPyramid: 'PİRAMİT', layoutRect: 'DİKDÖRTGEN',
-                // in-game tickers
-                rememberCards: (name) => `${name} - KARTLARI HATIRLA!`,
-                cardsHidden: 'KARTLAR KAPANDI! BAŞLA!',
-                cardOpen: (icon) => `${icon} AÇIK! AYNISINI BUL!`,
-                alreadyOpen: 'ZATEN AÇIK!',
-                matched: (icon, pts, label) => `${icon} EŞLEŞTİ! +${pts} ${label}`,
-                comboMatch: (c, pts, b) => `${c}x COMBO! +${pts} PUAN! +${b} TOP!`,
-                wrong: (icon) => `YANLIŞ! ${icon} ARIYORSUN!`,
-                noBalls: 'TOP HAKKI KALMADI!',
+                rememberCards: (n) => `${n} - KARTLARI HATIRLA!`, cardsHidden: 'KARTLAR KAPANDI! BAŞLA!',
+                cardOpen: (i) => `${i} AÇIK! AYNISINI BUL!`, alreadyOpen: 'ZATEN AÇIK!',
+                matched: (i,p,l) => `${i} EŞLEŞTİ! +${p} ${l}`, comboMatch: (c,p,b) => `${c}x COMBO! +${p} PUAN! +${b} TOP!`,
+                wrong: (i) => `YANLIŞ! ${i} ARIYORSUN!`, noBalls: 'TOP HAKKI KALMADI!',
                 speedFast: '⚡ HIZLI!', speedGood: '👍 İYİ',
-                // win / game over
-                levelClear: 'LEVEL<br>CLEAR!',
-                gameover: 'GAME<br>OVER!',
-                bonusTitle: '🏆 BÖLÜM TAMAMLANDI!',
-                bonusSub: 'KALAN TOPLAR = BONUS PUAN (her top +10)',
-                bonusNone: 'Bonus top yok',
-                bonusPts: (n) => `+${n} puan`,
-                // game over panel
+                levelClear: 'LEVEL<br>CLEAR!', gameover: 'GAME<br>OVER!',
+                bonusTitle: '🏆 BÖLÜM TAMAMLANDI!', bonusSub: 'KALAN TOPLAR = BONUS PUAN (her top +10)',
+                bonusNone: 'Bonus top yok', bonusPts: (n) => `+${n} puan`,
                 goScore: 'PUAN', goLevel: 'SEVİYE', goRank: 'SIRALAMA',
-                goRestart: '🔄 TEKRAR', goScores: '🏆 SKORLAR',
-                // menu
+                goRestart: '🔄 TEKRAR', goScores: '🏆 SKORLAR', goHome: '🏠 MENÜ',
                 menuPause: 'DURAKLAT', menuResume: 'DEVAM ET',
                 menuSound: 'SES', menuMute: 'SESSİZ', menuUnmute: 'SESİ AÇ',
-                menuHiScores: 'HI-SCORES', menuHome: 'ANA MENÜ', menuQuit: 'ÇIKIŞ',
+                menuHiScores: 'HI-SCORES', menuHome: 'ANA MENÜ', menuQuit: 'ÇIKIŞ', menuSettings: 'AYARLAR',
                 menuQuitConfirm: 'Oyundan çıkmak istediğinize emin misiniz?',
-                // pause overlay
                 pausedText: 'DURAKLATILDI', pauseResume: '▶ DEVAM ET',
-                // name input
                 namePlaceholder: 'OYUNCU', nameLabel: 'İSMİN NEDİR?',
-                // hi-scores
+                nameRequired: '⚠ İSMİNİ YAZMAN GEREKİYOR!', nameHint: 'ENTER veya butona bas', nameContinue: 'DEVAM ET ▶',
                 hsTitle: '🏆 EN YÜKSEK PUANLAR', hsLoading: 'Yükleniyor...', hsEmpty: 'Henüz skor yok. İlk sen ol!', hsClose: '✕ KAPAT',
+                stTitle: '⚙ AYARLAR', stSoundTitle: '🔊 SES AYARLARI', stGameTitle: '🎮 OYUN AYARLARI', stLangTitle: '🌍 DİL',
+                stMaster: 'Ana Ses', stSfx: 'Efekt Sesleri', stMusic: 'Müzik', stMusicVol: 'Müzik Sesi',
+                stTraj: 'Yörünge Çizgisi', stVib: 'Titreşim (Mobil)', stWake: 'Ekranı Açık Tut', stClose: '✕ KAPAT',
+                wsSettings: '⚙ AYARLAR', wsHiScores: '🏆 Hİ-SKORS',
             },
             en: {
                 tagline: 'Aim · Bounce · Match',
-                h1: 'Launch with the slingshot, bounce off walls!',
-                h2: 'Match two identical cards!',
-                h3: 'Earn bonus balls with combos!',
-                h4: 'Use your memory, level up!',
-                startBtn: 'PLAY!',
-                ovTitle: 'SLING FIND',
+                h1: 'Launch with the slingshot, bounce off walls!', h2: 'Match two identical cards!',
+                h3: 'Earn bonus balls with combos!', h4: 'Use your memory, level up!',
+                startBtn: 'PLAY!', ovTitle: 'SLING FIND',
                 ovP1: '🎯 Sling the ball, bounce off walls, match cards!',
                 ovP2: '🧱 Ball dies if it hits a wall without hitting a card!',
                 ovP3: '🃏 Card flips open when hit, ball explodes!',
                 ovP4: '🔥 Combo: 1 wall=2x, 2 walls=4x, 3 walls=6x score!',
-                ovP5: '🏐 Balls per level = 1.5× the number of cards',
-                ovBtn: 'PLAY!',
+                ovP5: '🏐 Balls per level = 1.5× the number of cards', ovBtn: 'PLAY!',
                 hudLevel: 'LEVEL', hudPairs: 'PAIRS', hudScore: 'SCORE', hudCombo: 'COMBO', hudBalls: 'BALLS',
-                // layout names
                 layoutSquare: 'SQUARE', layoutPyramid: 'PYRAMID', layoutRect: 'RECTANGLE',
-                // in-game tickers
-                rememberCards: (name) => `${name} - MEMORIZE!`,
-                cardsHidden: 'CARDS HIDDEN! GO!',
-                cardOpen: (icon) => `${icon} OPEN! FIND THE MATCH!`,
-                alreadyOpen: 'ALREADY OPEN!',
-                matched: (icon, pts, label) => `${icon} MATCHED! +${pts} ${label}`,
-                comboMatch: (c, pts, b) => `${c}x COMBO! +${pts} PTS! +${b} BALL!`,
-                wrong: (icon) => `WRONG! FIND ${icon}!`,
-                noBalls: 'NO BALLS LEFT!',
+                rememberCards: (n) => `${n} - MEMORIZE!`, cardsHidden: 'CARDS HIDDEN! GO!',
+                cardOpen: (i) => `${i} OPEN! FIND THE MATCH!`, alreadyOpen: 'ALREADY OPEN!',
+                matched: (i,p,l) => `${i} MATCHED! +${p} ${l}`, comboMatch: (c,p,b) => `${c}x COMBO! +${p} PTS! +${b} BALL!`,
+                wrong: (i) => `WRONG! FIND ${i}!`, noBalls: 'NO BALLS LEFT!',
                 speedFast: '⚡ FAST!', speedGood: '👍 GOOD',
-                // win / game over
-                levelClear: 'LEVEL<br>CLEAR!',
-                gameover: 'GAME<br>OVER!',
-                bonusTitle: '🏆 LEVEL COMPLETE!',
-                bonusSub: 'REMAINING BALLS = BONUS (×10 pts each)',
-                bonusNone: 'No bonus balls',
-                bonusPts: (n) => `+${n} pts`,
-                // game over panel
+                levelClear: 'LEVEL<br>CLEAR!', gameover: 'GAME<br>OVER!',
+                bonusTitle: '🏆 LEVEL COMPLETE!', bonusSub: 'REMAINING BALLS = BONUS (×10 pts each)',
+                bonusNone: 'No bonus balls', bonusPts: (n) => `+${n} pts`,
                 goScore: 'SCORE', goLevel: 'LEVEL', goRank: 'RANK',
-                goRestart: '🔄 RETRY', goScores: '🏆 SCORES',
-                // menu
+                goRestart: '🔄 RETRY', goScores: '🏆 SCORES', goHome: '🏠 MENU',
                 menuPause: 'PAUSE', menuResume: 'RESUME',
                 menuSound: 'SOUND', menuMute: 'MUTE', menuUnmute: 'UNMUTE',
-                menuHiScores: 'HI-SCORES', menuHome: 'MAIN MENU', menuQuit: 'QUIT',
+                menuHiScores: 'HI-SCORES', menuHome: 'MAIN MENU', menuQuit: 'QUIT', menuSettings: 'SETTINGS',
                 menuQuitConfirm: 'Are you sure you want to quit?',
-                // pause overlay
                 pausedText: 'PAUSED', pauseResume: '▶ RESUME',
-                // name input
                 namePlaceholder: 'PLAYER', nameLabel: 'YOUR NAME?',
-                // hi-scores
+                nameRequired: '⚠ YOU MUST ENTER YOUR NAME!', nameHint: 'Press ENTER or the button', nameContinue: 'CONTINUE ▶',
                 hsTitle: '🏆 HI-SCORES', hsLoading: 'Loading...', hsEmpty: 'No scores yet. Be the first!', hsClose: '✕ CLOSE',
-            }
+                stTitle: '⚙ SETTINGS', stSoundTitle: '🔊 SOUND', stGameTitle: '🎮 GAMEPLAY', stLangTitle: '🌍 LANGUAGE',
+                stMaster: 'Master Volume', stSfx: 'Sound Effects', stMusic: 'Music', stMusicVol: 'Music Volume',
+                stTraj: 'Trajectory Line', stVib: 'Vibration (Mobile)', stWake: 'Keep Screen On', stClose: '✕ CLOSE',
+                wsSettings: '⚙ SETTINGS', wsHiScores: '🏆 HI-SCORES',
+            },
+            de: {
+                tagline: 'Zielen · Abprallen · Zuordnen',
+                h1: 'Mit der Schleuder werfen, von Wänden abprallen!', h2: 'Zwei gleiche Karten zuordnen!',
+                h3: 'Combo-Bälle verdienen!', h4: 'Gedächtnis nutzen, aufsteigen!',
+                startBtn: 'SPIELEN!', ovTitle: 'SLING FIND',
+                ovP1: '🎯 Werfen, abprallen, Karten zuordnen!',
+                ovP2: '🧱 Ball stirbt wenn er Wand ohne Karte trifft!',
+                ovP3: '🃏 Karte öffnet sich wenn getroffen!',
+                ovP4: '🔥 Combo: 1 Wand=2x, 2 Wände=4x, 3 Wände=6x!',
+                ovP5: '🏐 Bälle = 1.5× Kartenanzahl', ovBtn: 'SPIELEN!',
+                hudLevel: 'LEVEL', hudPairs: 'PAARE', hudScore: 'PUNKTE', hudCombo: 'COMBO', hudBalls: 'BÄLLE',
+                layoutSquare: 'QUADRAT', layoutPyramid: 'PYRAMIDE', layoutRect: 'RECHTECK',
+                rememberCards: (n) => `${n} - EINPRÄGEN!`, cardsHidden: 'KARTEN VERDECKT! LOS!',
+                cardOpen: (i) => `${i} OFFEN! FINDE DAS PAAR!`, alreadyOpen: 'BEREITS OFFEN!',
+                matched: (i,p,l) => `${i} PAAR! +${p} ${l}`, comboMatch: (c,p,b) => `${c}x COMBO! +${p} PTS! +${b} BALL!`,
+                wrong: (i) => `FALSCH! SUCHE ${i}!`, noBalls: 'KEINE BÄLLE MEHR!',
+                speedFast: '⚡ SCHNELL!', speedGood: '👍 GUT',
+                levelClear: 'LEVEL<br>KLAR!', gameover: 'SPIEL<br>VORBEI!',
+                bonusTitle: '🏆 LEVEL ABGESCHLOSSEN!', bonusSub: 'RESTBÄLLE = BONUS (×10 Pkt)',
+                bonusNone: 'Kein Bonus', bonusPts: (n) => `+${n} Pkt`,
+                goScore: 'PUNKTE', goLevel: 'LEVEL', goRank: 'RANG',
+                goRestart: '🔄 NOCHMAL', goScores: '🏆 SCORES', goHome: '🏠 MENÜ',
+                menuPause: 'PAUSE', menuResume: 'WEITER',
+                menuSound: 'TON', menuMute: 'STUMM', menuUnmute: 'TON AN',
+                menuHiScores: 'BESTENLISTE', menuHome: 'HAUPTMENÜ', menuQuit: 'BEENDEN', menuSettings: 'EINSTELLUNGEN',
+                menuQuitConfirm: 'Spiel wirklich beenden?',
+                pausedText: 'PAUSE', pauseResume: '▶ WEITER',
+                namePlaceholder: 'SPIELER', nameLabel: 'DEIN NAME?',
+                nameRequired: '⚠ NAME ERFORDERLICH!', nameHint: 'ENTER oder Taste drücken', nameContinue: 'WEITER ▶',
+                hsTitle: '🏆 BESTENLISTE', hsLoading: 'Laden...', hsEmpty: 'Noch keine Scores!', hsClose: '✕ SCHLIEẞEN',
+                stTitle: '⚙ EINSTELLUNGEN', stSoundTitle: '🔊 TON', stGameTitle: '🎮 SPIEL', stLangTitle: '🌍 SPRACHE',
+                stMaster: 'Hauptlautstärke', stSfx: 'Soundeffekte', stMusic: 'Musik', stMusicVol: 'Musiklautstärke',
+                stTraj: 'Flugbahn', stVib: 'Vibration (Mobil)', stWake: 'Display aktiv halten', stClose: '✕ SCHLIEẞEN',
+                wsSettings: '⚙ EINSTELLUNGEN', wsHiScores: '🏆 BESTENLISTE',
+            },
+            fr: {
+                tagline: 'Viser · Rebondir · Associer',
+                h1: 'Lancez avec la fronde, rebondissez!', h2: 'Associez deux cartes identiques!',
+                h3: 'Gagnez des balles bonus!', h4: 'Utilisez votre mémoire!',
+                startBtn: 'JOUER!', ovTitle: 'SLING FIND',
+                ovP1: '🎯 Lancez, rebondissez, associez!',
+                ovP2: '🧱 La balle meurt si elle touche un mur sans carte!',
+                ovP3: '🃏 La carte souvre quand touchée!',
+                ovP4: '🔥 Combo: 1 mur=2x, 2 murs=4x, 3 murs=6x!',
+                ovP5: '🏐 Balles = 1.5× nombre de cartes', ovBtn: 'JOUER!',
+                hudLevel: 'NIVEAU', hudPairs: 'PAIRES', hudScore: 'SCORE', hudCombo: 'COMBO', hudBalls: 'BALLES',
+                layoutSquare: 'CARRÉ', layoutPyramid: 'PYRAMIDE', layoutRect: 'RECTANGLE',
+                rememberCards: (n) => `${n} - MÉMORISEZ!`, cardsHidden: 'CARTES CACHÉES! ALLEZ!',
+                cardOpen: (i) => `${i} OUVERT! TROUVEZ!`, alreadyOpen: 'DÉJÀ OUVERT!',
+                matched: (i,p,l) => `${i} PAIRE! +${p} ${l}`, comboMatch: (c,p,b) => `${c}x COMBO! +${p} PTS! +${b} BALLE!`,
+                wrong: (i) => `FAUX! CHERCHEZ ${i}!`, noBalls: 'PLUS DE BALLES!',
+                speedFast: '⚡ RAPIDE!', speedGood: '👍 BIEN',
+                levelClear: 'NIVEAU<br>RÉUSSI!', gameover: 'FIN DE<br>PARTIE!',
+                bonusTitle: '🏆 NIVEAU TERMINÉ!', bonusSub: 'BALLES RESTANTES = BONUS',
+                bonusNone: 'Pas de bonus', bonusPts: (n) => `+${n} pts`,
+                goScore: 'SCORE', goLevel: 'NIVEAU', goRank: 'RANG',
+                goRestart: '🔄 REJOUER', goScores: '🏆 SCORES', goHome: '🏠 MENU',
+                menuPause: 'PAUSE', menuResume: 'CONTINUER',
+                menuSound: 'SON', menuMute: 'MUET', menuUnmute: 'SON ON',
+                menuHiScores: 'MEILLEURS SCORES', menuHome: 'MENU PRINCIPAL', menuQuit: 'QUITTER', menuSettings: 'PARAMÈTRES',
+                menuQuitConfirm: 'Voulez-vous vraiment quitter?',
+                pausedText: 'PAUSE', pauseResume: '▶ CONTINUER',
+                namePlaceholder: 'JOUEUR', nameLabel: 'TON NOM?',
+                nameRequired: '⚠ NOM REQUIS!', nameHint: 'ENTRÉE ou cliquez', nameContinue: 'CONTINUER ▶',
+                hsTitle: '🏆 MEILLEURS SCORES', hsLoading: 'Chargement...', hsEmpty: 'Aucun score!', hsClose: '✕ FERMER',
+                stTitle: '⚙ PARAMÈTRES', stSoundTitle: '🔊 SON', stGameTitle: '🎮 JEU', stLangTitle: '🌍 LANGUE',
+                stMaster: 'Volume principal', stSfx: 'Effets sonores', stMusic: 'Musique', stMusicVol: 'Volume musique',
+                stTraj: 'Trajectoire', stVib: 'Vibration (Mobile)', stWake: 'Garder l\'écran actif', stClose: '✕ FERMER',
+                wsSettings: '⚙ PARAMÈTRES', wsHiScores: '🏆 SCORES',
+            },
+            es: {
+                tagline: 'Apuntar · Rebotar · Emparejar',
+                h1: '¡Lanza con la honda, rebota en las paredes!', h2: '¡Empareja dos cartas iguales!',
+                h3: '¡Gana bolas extra con combos!', h4: '¡Usa tu memoria, sube de nivel!',
+                startBtn: '¡JUGAR!', ovTitle: 'SLING FIND',
+                ovP1: '🎯 ¡Lanza, rebota, empareja!',
+                ovP2: '🧱 ¡La bola muere si toca una pared sin carta!',
+                ovP3: '🃏 ¡La carta se abre al ser golpeada!',
+                ovP4: '🔥 Combo: 1 pared=2x, 2 paredes=4x, 3=6x!',
+                ovP5: '🏐 Bolas = 1.5× número de cartas', ovBtn: '¡JUGAR!',
+                hudLevel: 'NIVEL', hudPairs: 'PARES', hudScore: 'PUNTOS', hudCombo: 'COMBO', hudBalls: 'BOLAS',
+                layoutSquare: 'CUADRADO', layoutPyramid: 'PIRÁMIDE', layoutRect: 'RECTÁNGULO',
+                rememberCards: (n) => `${n} - ¡MEMORIZA!`, cardsHidden: '¡CARTAS OCULTAS! ¡VAMOS!',
+                cardOpen: (i) => `${i} ¡ABIERTA! ¡ENCUENTRA EL PAR!`, alreadyOpen: '¡YA ABIERTA!',
+                matched: (i,p,l) => `${i} ¡PAR! +${p} ${l}`, comboMatch: (c,p,b) => `${c}x COMBO! +${p} PTS! +${b} BOLA!`,
+                wrong: (i) => `¡INCORRECTO! BUSCA ${i}!`, noBalls: '¡SIN BOLAS!',
+                speedFast: '⚡ ¡RÁPIDO!', speedGood: '👍 BIEN',
+                levelClear: '¡NIVEL<br>SUPERADO!', gameover: '¡FIN DEL<br>JUEGO!',
+                bonusTitle: '🏆 ¡NIVEL COMPLETADO!', bonusSub: 'BOLAS RESTANTES = BONUS',
+                bonusNone: 'Sin bonus', bonusPts: (n) => `+${n} pts`,
+                goScore: 'PUNTOS', goLevel: 'NIVEL', goRank: 'RANGO',
+                goRestart: '🔄 REPETIR', goScores: '🏆 PUNTUACIONES', goHome: '🏠 MENÚ',
+                menuPause: 'PAUSA', menuResume: 'CONTINUAR',
+                menuSound: 'SONIDO', menuMute: 'SILENCIO', menuUnmute: 'SONIDO ON',
+                menuHiScores: 'MEJORES', menuHome: 'MENÚ PRINCIPAL', menuQuit: 'SALIR', menuSettings: 'AJUSTES',
+                menuQuitConfirm: '¿Seguro que quieres salir?',
+                pausedText: 'PAUSA', pauseResume: '▶ CONTINUAR',
+                namePlaceholder: 'JUGADOR', nameLabel: '¿TU NOMBRE?',
+                nameRequired: '⚠ ¡NOMBRE REQUERIDO!', nameHint: 'Pulsa ENTER o el botón', nameContinue: 'CONTINUAR ▶',
+                hsTitle: '🏆 MEJORES PUNTUACIONES', hsLoading: 'Cargando...', hsEmpty: '¡Sin puntuaciones!', hsClose: '✕ CERRAR',
+                stTitle: '⚙ AJUSTES', stSoundTitle: '🔊 SONIDO', stGameTitle: '🎮 JUEGO', stLangTitle: '🌍 IDIOMA',
+                stMaster: 'Volumen principal', stSfx: 'Efectos de sonido', stMusic: 'Música', stMusicVol: 'Volumen música',
+                stTraj: 'Línea de trayectoria', stVib: 'Vibración (Móvil)', stWake: 'Mantener pantalla', stClose: '✕ CERRAR',
+                wsSettings: '⚙ AJUSTES', wsHiScores: '🏆 RÉCORDS',
+            },
+            ru: {
+                tagline: 'Прицел · Отскок · Совпадение',
+                h1: 'Бросай рогаткой, отскакивай от стен!', h2: 'Совмести две одинаковые карты!',
+                h3: 'Зарабатывай бонусные мячи!', h4: 'Используй память, повышай уровень!',
+                startBtn: 'ИГРАТЬ!', ovTitle: 'SLING FIND',
+                ovP1: '🎯 Брось, отскочи, совмести!',
+                ovP2: '🧱 Мяч гибнет если касается стены без карты!',
+                ovP3: '🃏 Карта открывается при попадании!',
+                ovP4: '🔥 Комбо: 1 стена=2x, 2=4x, 3=6x!',
+                ovP5: '🏐 Мячи = 1.5× количество карт', ovBtn: 'ИГРАТЬ!',
+                hudLevel: 'УРОВЕНЬ', hudPairs: 'ПАРЫ', hudScore: 'ОЧКИ', hudCombo: 'КОМБО', hudBalls: 'МЯЧИ',
+                layoutSquare: 'КВАДРАТ', layoutPyramid: 'ПИРАМИДА', layoutRect: 'ПРЯМОУГОЛЬНИК',
+                rememberCards: (n) => `${n} - ЗАПОМНИ!`, cardsHidden: 'КАРТЫ СКРЫТЫ! ВПЕРЁД!',
+                cardOpen: (i) => `${i} ОТКРЫТА! НАЙДИ ПАРУ!`, alreadyOpen: 'УЖЕ ОТКРЫТА!',
+                matched: (i,p,l) => `${i} СОВПАЛО! +${p} ${l}`, comboMatch: (c,p,b) => `${c}x КОМБО! +${p} ОЧКОВ! +${b} МЯЧ!`,
+                wrong: (i) => `НЕВЕРНО! ИЩИ ${i}!`, noBalls: 'МЯЧИйn ЗАКОНЧИЛИСЬ!',
+                speedFast: '⚡ БЫСТРО!', speedGood: '👍 ХОРОШО',
+                levelClear: 'УРОВЕНЬ<br>ПРОЙДЕН!', gameover: 'ИГРА<br>ОКОНЧЕНА!',
+                bonusTitle: '🏆 УРОВЕНЬ ЗАВЕРШЁН!', bonusSub: 'ОСТАВШИЕСЯ МЯЧИ = БОНУС',
+                bonusNone: 'Нет бонуса', bonusPts: (n) => `+${n} очков`,
+                goScore: 'ОЧКИ', goLevel: 'УРОВЕНЬ', goRank: 'МЕСТО',
+                goRestart: '🔄 СНОВА', goScores: '🏆 РЕКОРДЫ', goHome: '🏠 МЕНЮ',
+                menuPause: 'ПАУЗА', menuResume: 'ПРОДОЛЖИТЬ',
+                menuSound: 'ЗВУК', menuMute: 'БЕЗ ЗВУКА', menuUnmute: 'ЗВУК ВКЛ',
+                menuHiScores: 'РЕКОРДЫ', menuHome: 'ГЛАВНОЕ МЕНЮ', menuQuit: 'ВЫЙТИ', menuSettings: 'НАСТРОЙКИ',
+                menuQuitConfirm: 'Точно выйти из игры?',
+                pausedText: 'ПАУЗА', pauseResume: '▶ ПРОДОЛЖИТЬ',
+                namePlaceholder: 'ИГРОК', nameLabel: 'ТВОЁ ИМЯ?',
+                nameRequired: '⚠ ВВЕДИ ИМЯ!', nameHint: 'ENTER или нажми кнопку', nameContinue: 'ДАЛЕЕ ▶',
+                hsTitle: '🏆 РЕКОРДЫ', hsLoading: 'Загрузка...', hsEmpty: 'Нет рекордов!', hsClose: '✕ ЗАКРЫТЬ',
+                stTitle: '⚙ НАСТРОЙКИ', stSoundTitle: '🔊 ЗВУК', stGameTitle: '🎮 ИГРА', stLangTitle: '🌍 ЯЗЫК',
+                stMaster: 'Общая громкость', stSfx: 'Звуковые эффекты', stMusic: 'Музыка', stMusicVol: 'Громкость музыки',
+                stTraj: 'Линия траектории', stVib: 'Вибрация (Мобильный)', stWake: 'Не гасить экран', stClose: '✕ ЗАКРЫТЬ',
+                wsSettings: '⚙ НАСТРОЙКИ', wsHiScores: '🏆 РЕКОРДЫ',
+            },
+            zh: {
+                tagline: '瞄准 · 弹跳 · 匹配',
+                h1: '用弹弓射击，从墙壁弹跳！', h2: '匹配两张相同的牌！',
+                h3: '连击获得额外球！', h4: '用记忆力升级！',
+                startBtn: '开始！', ovTitle: 'SLING FIND',
+                ovP1: '🎯 射击、弹跳、匹配！',
+                ovP2: '🧱 球碰墙而不碰牌就消失！',
+                ovP3: '🃏 击中牌后翻开！',
+                ovP4: '🔥 连击：1墙=2倍，2墙=4倍，3墙=6倍！',
+                ovP5: '🏐 球数 = 牌数×1.5', ovBtn: '开始！',
+                hudLevel: '关卡', hudPairs: '配对', hudScore: '分数', hudCombo: '连击', hudBalls: '球',
+                layoutSquare: '方形', layoutPyramid: '金字塔', layoutRect: '矩形',
+                rememberCards: (n) => `${n} - 记住这些牌！`, cardsHidden: '牌翻盖了！开始！',
+                cardOpen: (i) => `${i} 翻开！找对应的！`, alreadyOpen: '已经翻开！',
+                matched: (i,p,l) => `${i} 匹配！+${p} ${l}`, comboMatch: (c,p,b) => `${c}x连击！+${p}分！+${b}球！`,
+                wrong: (i) => `错误！找 ${i}！`, noBalls: '没有球了！',
+                speedFast: '⚡ 快！', speedGood: '👍 好',
+                levelClear: '关卡<br>通过！', gameover: '游戏<br>结束！',
+                bonusTitle: '🏆 关卡完成！', bonusSub: '剩余球 = 奖励分',
+                bonusNone: '无奖励', bonusPts: (n) => `+${n}分`,
+                goScore: '分数', goLevel: '关卡', goRank: '排名',
+                goRestart: '🔄 重玩', goScores: '🏆 排行榜', goHome: '🏠 菜单',
+                menuPause: '暂停', menuResume: '继续',
+                menuSound: '声音', menuMute: '静音', menuUnmute: '开声音',
+                menuHiScores: '排行榜', menuHome: '主菜单', menuQuit: '退出', menuSettings: '设置',
+                menuQuitConfirm: '确定退出吗？',
+                pausedText: '暂停', pauseResume: '▶ 继续',
+                namePlaceholder: '玩家', nameLabel: '你的名字？',
+                nameRequired: '⚠ 请输入名字！', nameHint: '按ENTER或点击按钮', nameContinue: '继续 ▶',
+                hsTitle: '🏆 排行榜', hsLoading: '加载中...', hsEmpty: '暂无记录！', hsClose: '✕ 关闭',
+                stTitle: '⚙ 设置', stSoundTitle: '🔊 声音', stGameTitle: '🎮 游戏', stLangTitle: '🌍 语言',
+                stMaster: '主音量', stSfx: '音效', stMusic: '音乐', stMusicVol: '音乐音量',
+                stTraj: '轨迹线', stVib: '振动（手机）', stWake: '保持屏幕亮', stClose: '✕ 关闭',
+                wsSettings: '⚙ 设置', wsHiScores: '🏆 排行榜',
+            },
+            ja: {
+                tagline: '狙う · 跳ね返る · 合わせる',
+                h1: 'スリングで撃って、壁で跳ね返らせる！', h2: '同じカードを2枚合わせる！',
+                h3: 'コンボでボーナスボールを獲得！', h4: '記憶力を使ってレベルアップ！',
+                startBtn: 'スタート！', ovTitle: 'SLING FIND',
+                ovP1: '🎯 撃って、跳ね返って、カードを合わせる！',
+                ovP2: '🧱 カードに当たらず壁に当たったボールは消える！',
+                ovP3: '🃏 カードは当たったら開く！',
+                ovP4: '🔥 コンボ：1壁=2倍、2壁=4倍、3壁=6倍！',
+                ovP5: '🏐 ボール数 = カード数×1.5', ovBtn: 'スタート！',
+                hudLevel: 'レベル', hudPairs: 'ペア', hudScore: 'スコア', hudCombo: 'コンボ', hudBalls: 'ボール',
+                layoutSquare: '正方形', layoutPyramid: 'ピラミッド', layoutRect: '長方形',
+                rememberCards: (n) => `${n} - 覚えて！`, cardsHidden: 'カード隠れた！スタート！',
+                cardOpen: (i) => `${i} 開いた！ペアを探して！`, alreadyOpen: 'すでに開いてる！',
+                matched: (i,p,l) => `${i} マッチ！+${p} ${l}`, comboMatch: (c,p,b) => `${c}xコンボ！+${p}点！+${b}ボール！`,
+                wrong: (i) => `ミス！${i}を探して！`, noBalls: 'ボールがない！',
+                speedFast: '⚡ 速い！', speedGood: '👍 いいね',
+                levelClear: 'レベル<br>クリア！', gameover: 'ゲーム<br>オーバー！',
+                bonusTitle: '🏆 レベルクリア！', bonusSub: '残りボール = ボーナス',
+                bonusNone: 'ボーナスなし', bonusPts: (n) => `+${n}点`,
+                goScore: 'スコア', goLevel: 'レベル', goRank: 'ランク',
+                goRestart: '🔄 もう一度', goScores: '🏆 スコア', goHome: '🏠 メニュー',
+                menuPause: '一時停止', menuResume: '再開',
+                menuSound: '音', menuMute: 'ミュート', menuUnmute: '音ON',
+                menuHiScores: 'ランキング', menuHome: 'メインメニュー', menuQuit: '終了', menuSettings: '設定',
+                menuQuitConfirm: '本当に終了しますか？',
+                pausedText: '一時停止', pauseResume: '▶ 再開',
+                namePlaceholder: 'プレイヤー', nameLabel: 'あなたの名前？',
+                nameRequired: '⚠ 名前を入力してください！', nameHint: 'ENTERまたはボタンを押す', nameContinue: '続ける ▶',
+                hsTitle: '🏆 ランキング', hsLoading: '読み込み中...', hsEmpty: 'まだスコアなし！', hsClose: '✕ 閉じる',
+                stTitle: '⚙ 設定', stSoundTitle: '🔊 サウンド', stGameTitle: '🎮 ゲーム', stLangTitle: '🌍 言語',
+                stMaster: 'マスター音量', stSfx: '効果音', stMusic: '音楽', stMusicVol: '音楽の音量',
+                stTraj: '軌道線', stVib: '振動（モバイル）', stWake: '画面を常に表示', stClose: '✕ 閉じる',
+                wsSettings: '⚙ 設定', wsHiScores: '🏆 ランキング',
+            },
+            pt: {
+                tagline: 'Mirar · Ricochetear · Combinar',
+                h1: 'Lance com a funda, ricocheteie nas paredes!', h2: 'Combine duas cartas iguais!',
+                h3: 'Ganhe bolas bônus com combos!', h4: 'Use sua memória, suba de nível!',
+                startBtn: 'JOGAR!', ovTitle: 'SLING FIND',
+                ovP1: '🎯 Lance, ricocheteie, combine!',
+                ovP2: '🧱 A bola morre se tocar na parede sem tocar carta!',
+                ovP3: '🃏 A carta abre quando atingida!',
+                ovP4: '🔥 Combo: 1 parede=2x, 2=4x, 3=6x!',
+                ovP5: '🏐 Bolas = 1.5× número de cartas', ovBtn: 'JOGAR!',
+                hudLevel: 'NÍVEL', hudPairs: 'PARES', hudScore: 'PONTOS', hudCombo: 'COMBO', hudBalls: 'BOLAS',
+                layoutSquare: 'QUADRADO', layoutPyramid: 'PIRÂMIDE', layoutRect: 'RETÂNGULO',
+                rememberCards: (n) => `${n} - MEMORIZE!`, cardsHidden: 'CARTAS VIRADAS! VAI!',
+                cardOpen: (i) => `${i} ABERTA! ENCONTRE O PAR!`, alreadyOpen: 'JÁ ABERTA!',
+                matched: (i,p,l) => `${i} PAR! +${p} ${l}`, comboMatch: (c,p,b) => `${c}x COMBO! +${p} PTS! +${b} BOLA!`,
+                wrong: (i) => `ERRADO! PROCURE ${i}!`, noBalls: 'SEM BOLAS!',
+                speedFast: '⚡ RÁPIDO!', speedGood: '👍 BOM',
+                levelClear: 'NÍVEL<br>CLARO!', gameover: 'FIM DE<br>JOGO!',
+                bonusTitle: '🏆 NÍVEL COMPLETO!', bonusSub: 'BOLAS RESTANTES = BÔNUS',
+                bonusNone: 'Sem bônus', bonusPts: (n) => `+${n} pts`,
+                goScore: 'PONTOS', goLevel: 'NÍVEL', goRank: 'CLASSIFICAÇÃO',
+                goRestart: '🔄 JOGAR NOVAMENTE', goScores: '🏆 PONTUAÇÕES', goHome: '🏠 MENU',
+                menuPause: 'PAUSAR', menuResume: 'CONTINUAR',
+                menuSound: 'SOM', menuMute: 'MUDO', menuUnmute: 'SOM ON',
+                menuHiScores: 'RECORDES', menuHome: 'MENU PRINCIPAL', menuQuit: 'SAIR', menuSettings: 'CONFIGURAÇÕES',
+                menuQuitConfirm: 'Tem certeza que quer sair?',
+                pausedText: 'PAUSADO', pauseResume: '▶ CONTINUAR',
+                namePlaceholder: 'JOGADOR', nameLabel: 'SEU NOME?',
+                nameRequired: '⚠ NOME OBRIGATÓRIO!', nameHint: 'Pressione ENTER ou o botão', nameContinue: 'CONTINUAR ▶',
+                hsTitle: '🏆 RECORDES', hsLoading: 'Carregando...', hsEmpty: 'Sem pontuações!', hsClose: '✕ FECHAR',
+                stTitle: '⚙ CONFIGURAÇÕES', stSoundTitle: '🔊 SOM', stGameTitle: '🎮 JOGO', stLangTitle: '🌍 IDIOMA',
+                stMaster: 'Volume principal', stSfx: 'Efeitos sonoros', stMusic: 'Música', stMusicVol: 'Volume música',
+                stTraj: 'Linha de trajetória', stVib: 'Vibração (Móvel)', stWake: 'Manter tela ativa', stClose: '✕ FECHAR',
+                wsSettings: '⚙ CONFIGURAÇÕES', wsHiScores: '🏆 RECORDES',
+            },
+            ar: {
+                tagline: 'صوّب · ارتدّ · طابق',
+                h1: 'أطلق بالمقلاع، ارتدّ عن الجدران!', h2: 'طابق بطاقتين متطابقتين!',
+                h3: 'اربح كرات مكافأة بالكومبو!', h4: 'استخدم ذاكرتك، ارتقِ!',
+                startBtn: 'العب!', ovTitle: 'SLING FIND',
+                ovP1: '🎯 أطلق، ارتدّ، طابق!',
+                ovP2: '🧱 الكرة تختفي إذا لمست جداراً دون بطاقة!',
+                ovP3: '🃏 البطاقة تنفتح عند الإصابة!',
+                ovP4: '🔥 كومبو: 1 جدار=2×، 2=4×، 3=6×!',
+                ovP5: '🏐 الكرات = 1.5× عدد البطاقات', ovBtn: 'العب!',
+                hudLevel: 'المستوى', hudPairs: 'أزواج', hudScore: 'نقاط', hudCombo: 'كومبو', hudBalls: 'كرات',
+                layoutSquare: 'مربع', layoutPyramid: 'هرم', layoutRect: 'مستطيل',
+                rememberCards: (n) => `${n} - تذكّر!`, cardsHidden: 'البطاقات مخفية! ابدأ!',
+                cardOpen: (i) => `${i} مفتوحة! ابحث عن الزوج!`, alreadyOpen: 'مفتوحة بالفعل!',
+                matched: (i,p,l) => `${i} تطابق! +${p} ${l}`, comboMatch: (c,p,b) => `${c}× كومبو! +${p} نقطة! +${b} كرة!`,
+                wrong: (i) => `خطأ! ابحث عن ${i}!`, noBalls: 'لا كرات متبقية!',
+                speedFast: '⚡ سريع!', speedGood: '👍 جيد',
+                levelClear: 'المستوى<br>مكتمل!', gameover: 'انتهت<br>اللعبة!',
+                bonusTitle: '🏆 المستوى مكتمل!', bonusSub: 'الكرات المتبقية = مكافأة',
+                bonusNone: 'لا مكافأة', bonusPts: (n) => `+${n} نقطة`,
+                goScore: 'نقاط', goLevel: 'مستوى', goRank: 'مرتبة',
+                goRestart: '🔄 مجدداً', goScores: '🏆 السجلات', goHome: '🏠 القائمة',
+                menuPause: 'توقف', menuResume: 'استمر',
+                menuSound: 'صوت', menuMute: 'صامت', menuUnmute: 'صوت مفعّل',
+                menuHiScores: 'السجلات', menuHome: 'القائمة الرئيسية', menuQuit: 'خروج', menuSettings: 'إعدادات',
+                menuQuitConfirm: 'هل أنت متأكد من الخروج؟',
+                pausedText: 'متوقف', pauseResume: '▶ استمر',
+                namePlaceholder: 'لاعب', nameLabel: 'اسمك؟',
+                nameRequired: '⚠ الاسم مطلوب!', nameHint: 'اضغط Enter أو الزر', nameContinue: 'استمر ▶',
+                hsTitle: '🏆 أعلى السجلات', hsLoading: 'جارٍ التحميل...', hsEmpty: 'لا سجلات بعد!', hsClose: '✕ إغلاق',
+                stTitle: '⚙ إعدادات', stSoundTitle: '🔊 الصوت', stGameTitle: '🎮 اللعبة', stLangTitle: '🌍 اللغة',
+                stMaster: 'مستوى الصوت', stSfx: 'المؤثرات الصوتية', stMusic: 'موسيقى', stMusicVol: 'مستوى الموسيقى',
+                stTraj: 'خط المسار', stVib: 'اهتزاز (جوال)', stWake: 'إبقاء الشاشة مضاءة', stClose: '✕ إغلاق',
+                wsSettings: '⚙ إعدادات', wsHiScores: '🏆 السجلات',
+            },
         };
 
         // Translation helper
@@ -1871,23 +3012,35 @@
         }
 
         function setLang(lang) {
+            if (!STRINGS[lang]) lang = 'tr';
             currentLang = lang;
             const s = STRINGS[lang];
+            // Save to settings
+            gameSettings.lang = lang;
+            saveSettings();
 
-            // Welcome screen
             const safe = (id) => document.getElementById(id);
             const safeQ = (sel) => document.querySelector(sel);
 
+            // Welcome screen
             if(safe('ws-tagline')) safe('ws-tagline').textContent = s.tagline;
             if(safe('h1')) safe('h1').textContent = s.h1;
             if(safe('h2')) safe('h2').textContent = s.h2;
             if(safe('h3')) safe('h3').textContent = s.h3;
             if(safe('h4')) safe('h4').textContent = s.h4;
             if(safe('ws-start-btn')) safe('ws-start-btn').textContent = s.startBtn;
-            if(safe('btn-tr')) safe('btn-tr').classList.toggle('active', lang === 'tr');
-            if(safe('btn-en')) safe('btn-en').classList.toggle('active', lang === 'en');
             if(safe('player-name')) safe('player-name').placeholder = s.namePlaceholder;
             if(safe('ws-name-label')) safe('ws-name-label').textContent = s.nameLabel;
+            if(safe('ws-settings-btn')) safe('ws-settings-btn').textContent = s.wsSettings;
+            if(safe('ws-hs-btn')) safe('ws-hs-btn').textContent = s.wsHiScores;
+
+            // Update all lang-grid-btn active states
+            document.querySelectorAll('.lang-grid-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.lang === lang);
+            });
+            // Legacy lang buttons
+            if(safe('btn-tr')) safe('btn-tr').classList.toggle('active', lang === 'tr');
+            if(safe('btn-en')) safe('btn-en').classList.toggle('active', lang === 'en');
 
             // Overlay (how to play)
             if(safe('ov-title')) safe('ov-title').textContent = s.ovTitle;
@@ -1910,10 +3063,36 @@
             if(statLabels[2]) statLabels[2].textContent = s.goRank;
             const goPlay = safeQ('.go-btn-play');
             const goHs   = safeQ('.go-btn-hs');
+            const goHome = safeQ('.go-btn-home');
             if(goPlay) goPlay.textContent = s.goRestart;
             if(goHs)   goHs.textContent   = s.goScores;
+            if(goHome) goHome.textContent  = s.goHome;
 
-            // Menu labels (updateMenuLabels defined later in code)
+            // Hi-scores
+            if(safe('hs-title')) safe('hs-title').textContent = s.hsTitle;
+            const hsClose = safeQ('.hs-close-btn');
+            if(hsClose) hsClose.textContent = s.hsClose;
+
+            // Settings panel labels
+            if(safe('settings-title')) safe('settings-title').textContent = s.stTitle;
+            if(safe('st-sound-title')) safe('st-sound-title').textContent = s.stSoundTitle;
+            if(safe('st-game-title')) safe('st-game-title').textContent = s.stGameTitle;
+            if(safe('st-lang-title')) safe('st-lang-title').textContent = s.stLangTitle;
+            if(safe('st-master-label')) safe('st-master-label').innerHTML = '<span>🔊</span>' + s.stMaster;
+            if(safe('st-sfx-label')) safe('st-sfx-label').innerHTML = '<span>💥</span>' + s.stSfx;
+            if(safe('st-music-label')) safe('st-music-label').innerHTML = '<span>🎵</span>' + s.stMusic;
+            if(safe('st-music-vol-label')) safe('st-music-vol-label').innerHTML = '<span>🎶</span>' + s.stMusicVol;
+            if(safe('st-traj-label')) safe('st-traj-label').innerHTML = '<span>🎯</span>' + s.stTraj;
+            if(safe('st-vib-label')) safe('st-vib-label').innerHTML = '<span>📳</span>' + s.stVib;
+            if(safe('st-wake-label')) safe('st-wake-label').innerHTML = '<span>🔆</span>' + s.stWake;
+            if(safe('st-close-btn')) safe('st-close-btn').textContent = s.stClose;
+
+            // Spotlight
+            if(safe('name-spotlight-label')) safe('name-spotlight-label').textContent = s.nameRequired;
+            if(safe('name-spotlight-hint')) safe('name-spotlight-hint').textContent = s.nameHint;
+            if(safe('name-spotlight-btn')) safe('name-spotlight-btn').textContent = s.nameContinue;
+
+            // Menu labels
             if (typeof updateMenuLabels === 'function') updateMenuLabels();
         }
 
@@ -1947,6 +3126,18 @@
             goPanel.classList.add('show');
         }
 
+        function goHomeFromGameOver() {
+            document.getElementById('gameover-panel').classList.remove('show');
+            isPaused = false;
+            document.getElementById('pause-overlay').classList.remove('show');
+            gameState = 'menu';
+            startMenuMusic();
+            const ws = document.getElementById('welcome-screen');
+            ws.style.display = 'flex';
+            ws.style.opacity = '1';
+            ws.classList.remove('fade-out');
+        }
+
         function restartGame() {
             document.getElementById('gameover-panel').classList.remove('show');
             isPaused = false;
@@ -1976,8 +3167,33 @@
             }
         } catch(e) { console.warn('Firebase init failed:', e); }
 
+        // localStorage yedek skor fonksiyonları
+        function saveScoreLocal(name, score, level) {
+            try {
+                let scores = loadScoresLocal();
+                let existing = scores.find(s => s.name === name);
+                if (!existing || score > existing.score) {
+                    scores = scores.filter(s => s.name !== name);
+                    scores.push({ name, score, level, date: Date.now() });
+                    scores.sort((a, b) => b.score - a.score);
+                    scores = scores.slice(0, 50);
+                    localStorage.setItem('slingfind_scores', JSON.stringify(scores));
+                }
+            } catch(e) { console.warn('Local score save failed:', e); }
+        }
+
+        function loadScoresLocal() {
+            try {
+                const raw = localStorage.getItem('slingfind_scores');
+                return raw ? JSON.parse(raw) : [];
+            } catch(e) { return []; }
+        }
+
         async function saveScore(name, score, level) {
-            if (!db) return;
+            // Her zaman locale kaydet
+            saveScoreLocal(name, score, level);
+
+            if (!db) { console.warn('Firebase db null, sadece local kaydedildi'); return; }
             try {
                 const key = name.toUpperCase().trim().replace(/[^A-Z0-9_]/g, '_');
                 const ref = db.ref('scores/' + key);
@@ -1985,19 +3201,33 @@
                 const existing = snapshot.val();
                 if (!existing || score > existing.score) {
                     await ref.set({ name: key, score, level, date: Date.now() });
+                    console.log('Firebase skoru kaydedildi:', key, score);
                 }
-            } catch(e) { console.warn('Score save failed:', e); }
+            } catch(e) { console.warn('Firebase score save failed:', e); }
         }
 
         async function loadScores() {
-            if (!db) return [];
-            try {
-                const ref = db.ref('scores').orderByChild('score').limitToLast(50);
-                const snapshot = await ref.once('value');
-                const data = snapshot.val();
-                if (!data) return [];
-                return Object.values(data).sort((a, b) => b.score - a.score);
-            } catch(e) { console.warn('Score load failed:', e); return []; }
+            // Önce Firebase dene
+            if (db) {
+                try {
+                    const ref = db.ref('scores').orderByChild('score').limitToLast(50);
+                    const snapshot = await ref.once('value');
+                    const data = snapshot.val();
+                    if (data) {
+                        let fbScores = Object.values(data).sort((a, b) => b.score - a.score);
+                        // Local ile birleştir (Firebase öncelikli)
+                        let localScores = loadScoresLocal();
+                        localScores.forEach(ls => {
+                            if (!fbScores.find(fs => fs.name === ls.name)) {
+                                fbScores.push(ls);
+                            }
+                        });
+                        return fbScores.sort((a, b) => b.score - a.score).slice(0, 50);
+                    }
+                } catch(e) { console.warn('Firebase load failed, local kullanılıyor:', e); }
+            }
+            // Firebase yoksa local
+            return loadScoresLocal();
         }
 
         async function showHiScores() {
@@ -2006,6 +3236,9 @@
             const title = document.getElementById('hs-title');
             title.textContent = t('hsTitle');
             list.innerHTML = `<div class="hs-loading">${t('hsLoading')}</div>`;
+            // Reset scroll
+            const scrollArea = document.getElementById('hs-scroll-area');
+            if (scrollArea) scrollArea.scrollTop = 0;
             panel.classList.add('show');
 
             const scores = await loadScores();
@@ -2034,14 +3267,50 @@
         }
         function goToGameMenu() {
             const nameInput = document.getElementById('player-name');
-            playerName = nameInput.value.trim().toUpperCase() || t('namePlaceholder');
-            const ws = document.getElementById('welcome-screen');
-            ws.classList.add('fade-out');
-            setTimeout(() => {
-                ws.style.display = 'none';
-                // Overlay'i göster (nasıl oynanır + başla butonu)
-                overlay.classList.remove('hidden');
-            }, 700);
+            const nameVal = nameInput.value.trim().toUpperCase();
+            if (!nameVal) {
+                // Spotlight modal aç
+                const spotlight = document.getElementById('name-spotlight');
+                const spotInput = document.getElementById('name-spotlight-input');
+                const spotLabel = document.getElementById('name-spotlight-label');
+                spotLabel.textContent = currentLang === 'tr' ? '⚠ İSMİNİ YAZMAN GEREKİYOR!' : '⚠ YOU NEED TO ENTER YOUR NAME!';
+                document.getElementById('name-spotlight-hint').textContent = currentLang === 'tr' ? 'ENTER veya butona bas' : 'Press ENTER or the button';
+                spotlight.classList.add('show');
+                setTimeout(() => spotInput.focus(), 100);
+                return;
+            }
+            playerName = nameVal;
+            launchGame();
+        }
+
+        function confirmSpotlightName() {
+            const spotInput = document.getElementById('name-spotlight-input');
+            const val = spotInput.value.trim().toUpperCase();
+            if (!val) {
+                spotInput.style.borderColor = '#ff3366';
+                spotInput.style.boxShadow = '0 0 30px rgba(255,51,102,0.9)';
+                setTimeout(() => {
+                    spotInput.style.borderColor = '#ff3366';
+                }, 600);
+                spotInput.focus();
+                return;
+            }
+            // İsmi ana input'a da yaz
+            document.getElementById('player-name').value = val;
+            playerName = val;
+            document.getElementById('name-spotlight').classList.remove('show');
+            launchGame();
+        }
+
+        function launchGame() {
+            stopMenuMusic(() => {
+                const ws = document.getElementById('welcome-screen');
+                ws.classList.add('fade-out');
+                setTimeout(() => {
+                    ws.style.display = 'none';
+                    overlay.classList.remove('hidden');
+                }, 700);
+            });
         }
 
         // Starfield animation
@@ -2384,10 +3653,586 @@
             }, 180);
         }
 
+
+
+
+
+
+        // ===== MENÜ CLICK SESLERİ =====
+        function playMenuClick(type='default') {
+            if(!audioCtx || !sfxEnabled) return;
+            try {
+                if (type === 'start') {
+                    // Başla butonu - yükselen arpej
+                    [523, 659, 784, 1047].forEach((f, i) => {
+                        setTimeout(() => {
+                            let o = audioCtx.createOscillator();
+                            let g = audioCtx.createGain();
+                            o.type = 'sine'; o.frequency.value = f;
+                            g.gain.setValueAtTime(0.15 * masterVolume, audioCtx.currentTime);
+                            g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.18);
+                            o.connect(g); g.connect(audioCtx.destination);
+                            o.start(); o.stop(audioCtx.currentTime + 0.18);
+                        }, i * 60);
+                    });
+                } else if (type === 'lang') {
+                    // Dil seçimi - hafif pop
+                    let o = audioCtx.createOscillator();
+                    let g = audioCtx.createGain();
+                    o.type = 'sine'; o.frequency.setValueAtTime(880, audioCtx.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.06);
+                    g.gain.setValueAtTime(0.1 * masterVolume, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(); o.stop(audioCtx.currentTime + 0.1);
+                } else if (type === 'hs') {
+                    // Hi-scores - coin sesi
+                    [1200, 1600].forEach((f, i) => {
+                        setTimeout(() => {
+                            let o = audioCtx.createOscillator();
+                            let g = audioCtx.createGain();
+                            o.type = 'triangle'; o.frequency.value = f;
+                            g.gain.setValueAtTime(0.12 * masterVolume, audioCtx.currentTime);
+                            g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.12);
+                            o.connect(g); g.connect(audioCtx.destination);
+                            o.start(); o.stop(audioCtx.currentTime + 0.12);
+                        }, i * 80);
+                    });
+                } else if (type === 'close') {
+                    // Kapat - aşağı pop
+                    let o = audioCtx.createOscillator();
+                    let g = audioCtx.createGain();
+                    o.type = 'sine'; o.frequency.setValueAtTime(600, audioCtx.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                    g.gain.setValueAtTime(0.1 * masterVolume, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.12);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(); o.stop(audioCtx.currentTime + 0.12);
+                } else if (type === 'settings') {
+                    // Settings - mekanik tık
+                    let o = audioCtx.createOscillator();
+                    let g = audioCtx.createGain();
+                    o.type = 'square'; o.frequency.value = 400;
+                    g.gain.setValueAtTime(0.08 * masterVolume, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.05);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(); o.stop(audioCtx.currentTime + 0.05);
+                } else {
+                    // Default - kısa pop
+                    let o = audioCtx.createOscillator();
+                    let g = audioCtx.createGain();
+                    o.type = 'sine'; o.frequency.setValueAtTime(700, audioCtx.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.08);
+                    g.gain.setValueAtTime(0.1 * masterVolume, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(); o.stop(audioCtx.currentTime + 0.1);
+                }
+            } catch(e){}
+        }
+
+        // ===== MÜZİK FADE =====
+        function fadeOutAudio(audioEl, duration=800, cb) {
+            if (!audioEl || audioEl.paused) { if(cb) cb(); return; }
+            const startVol = audioEl.volume;
+            const steps = 30;
+            const stepTime = duration / steps;
+            const stepVol = startVol / steps;
+            let s = 0;
+            const iv = setInterval(() => {
+                s++;
+                audioEl.volume = Math.max(0, startVol - stepVol * s);
+                if (s >= steps) {
+                    clearInterval(iv);
+                    audioEl.pause();
+                    audioEl.currentTime = 0;
+                    audioEl.volume = startVol;
+                    if (cb) cb();
+                }
+            }, stepTime);
+        }
+
+        function fadeInAudio(audioEl, targetVol, duration=800) {
+            if (!audioEl) return;
+            audioEl.volume = 0;
+            audioEl.play().catch(()=>{});
+            const steps = 30;
+            const stepTime = duration / steps;
+            const stepVol = targetVol / steps;
+            let s = 0;
+            const iv = setInterval(() => {
+                s++;
+                audioEl.volume = Math.min(targetVol, stepVol * s);
+                if (s >= steps) { clearInterval(iv); audioEl.volume = targetVol; }
+            }, stepTime);
+        }
+
+        function fadeOutAllMusic(duration=800, cb) {
+            const ids = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'];
+            const playing = ids.map(id => document.getElementById(id)).filter(a => a && !a.paused);
+            if (playing.length === 0) { if(cb) cb(); return; }
+            let done = 0;
+            playing.forEach(a => fadeOutAudio(a, duration, () => {
+                done++;
+                if (done === playing.length && cb) cb();
+            }));
+        }
+
+        // ===== HUD MÜZİK KONTROLÜ =====
+        let hudMusicMuted = false;
+        let hudMusicPopupOpen = false;
+
+        function toggleMusicPopup(e) {
+            e.stopPropagation();
+            const popup = document.getElementById('hud-music-popup');
+            hudMusicPopupOpen = !hudMusicPopupOpen;
+            popup.classList.toggle('show', hudMusicPopupOpen);
+            // Slider'ı güncel değere getir
+            const slider = document.getElementById('hmp-slider');
+            slider.value = gameSettings.musicVol;
+            document.getElementById('hmp-val').textContent = gameSettings.musicVol;
+            updateHmpSliderGrad(gameSettings.musicVol);
+        }
+
+        function onHmpSlider(val) {
+            val = parseInt(val);
+            document.getElementById('hmp-val').textContent = val;
+            updateHmpSliderGrad(val);
+            gameSettings.musicVol = val;
+            const v = (val / 100) * 0.35;
+            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'].forEach(id => {
+                const a = document.getElementById(id); if(a) a.volume = v;
+            });
+            // Settings slider ile de senkronize et
+            const stSlider = document.getElementById('st-music-vol');
+            if(stSlider) { stSlider.value = val; document.getElementById('st-music-vol-val').textContent = val; }
+            hudMusicMuted = val === 0;
+            updateHudMusicBtn();
+            saveSettings();
+        }
+
+        function updateHmpSliderGrad(val) {
+            const s = document.getElementById('hmp-slider');
+            if(s) s.style.background = `linear-gradient(to right, #00e5ff ${val}%, #333 ${val}%)`;
+        }
+
+        function toggleHmpMute() {
+            hudMusicMuted = !hudMusicMuted;
+            const allIds = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'];
+            if (hudMusicMuted) {
+                // Fade out
+                allIds.forEach(id => {
+                    const a = document.getElementById(id);
+                    if(a && !a.paused) fadeOutAudio(a, 500);
+                });
+            } else {
+                // Fade in - sadece aktif olması gereken parçayı çal
+                const targetVol = (gameSettings.musicVol / 100) * 0.35;
+                if (gameState === 'playing') {
+                    const audio = getLevelMusicEl(currentLevel);
+                    if(audio) fadeInAudio(audio, targetVol, 600);
+                    bgMusicNode = audio;
+                } else {
+                    const audio = document.getElementById('menuMusicEl');
+                    if(audio) fadeInAudio(audio, targetVol, 600);
+                }
+            }
+            updateHudMusicBtn();
+            const btn = document.getElementById('hmp-mute-btn');
+            if(btn) btn.textContent = hudMusicMuted ? '🔊 MÜZİĞİ AÇ' : '🔇 MÜZİĞİ KAPAT';
+        }
+
+        function updateHudMusicBtn() {
+            const btn = document.getElementById('hud-music-btn');
+            const icon = document.getElementById('hud-music-icon');
+            if(!btn) return;
+            if(hudMusicMuted) {
+                btn.classList.add('muted');
+                if(icon) icon.textContent = '✕';
+            } else {
+                btn.classList.remove('muted');
+                if(icon) icon.textContent = '♪';
+            }
+        }
+
+        // Popup dışına tıklayınca kapat
+        document.addEventListener('click', () => {
+            if(hudMusicPopupOpen) {
+                document.getElementById('hud-music-popup').classList.remove('show');
+                hudMusicPopupOpen = false;
+            }
+        });
+
+        // ===== ADMIN =====
+        const ADMIN_PASS = 'Kalem123!';
+        let adminWrongCount = 0;
+        let adminLockUntil = 0;
+        let adminLockTimer = null;
+
+        function openAdminModal() {
+            hideSettings();
+            const modal = document.getElementById('admin-modal');
+            const input = document.getElementById('admin-pass-input');
+            const errEl = document.getElementById('admin-error');
+            input.value = '';
+            errEl.textContent = '';
+            document.getElementById('admin-success').textContent = '';
+            document.getElementById('admin-confirm-box').classList.remove('show');
+
+            // Kilitli mi kontrol et
+            const remaining = Math.ceil((adminLockUntil - Date.now()) / 1000);
+            if (remaining > 0) {
+                input.disabled = true;
+                showAdminLockMsg(remaining);
+            } else {
+                input.disabled = false;
+            }
+            modal.classList.add('show');
+            if (!input.disabled) setTimeout(() => input.focus(), 100);
+        }
+
+        function showAdminLockMsg(remaining) {
+            const errEl = document.getElementById('admin-error');
+            const input = document.getElementById('admin-pass-input');
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            const timeStr = mins > 0 ? `${mins}:${secs.toString().padStart(2,'0')}` : `${secs}sn`;
+            errEl.textContent = `🔒 ${timeStr} bekle`;
+            errEl.style.color = '#ff3366';
+            input.disabled = true;
+            input.style.opacity = '0.4';
+
+            if (adminLockTimer) clearInterval(adminLockTimer);
+            adminLockTimer = setInterval(() => {
+                const rem = Math.ceil((adminLockUntil - Date.now()) / 1000);
+                if (rem <= 0) {
+                    clearInterval(adminLockTimer);
+                    adminLockTimer = null;
+                    errEl.textContent = '✅ Tekrar deneyebilirsin';
+                    errEl.style.color = '#00ff88';
+                    input.disabled = false;
+                    input.style.opacity = '1';
+                    adminWrongCount = 0;
+                    setTimeout(() => { errEl.textContent = ''; }, 2000);
+                    input.focus();
+                } else {
+                    const m = Math.floor(rem / 60);
+                    const s = rem % 60;
+                    const ts = m > 0 ? `${m}:${s.toString().padStart(2,'0')}` : `${s}sn`;
+                    errEl.textContent = `🔒 ${ts} bekle`;
+                }
+            }, 1000);
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal').classList.remove('show');
+        }
+
+        function checkAdminPass() {
+            const input = document.getElementById('admin-pass-input');
+            const errEl = document.getElementById('admin-error');
+
+            // Kilit kontrolü
+            if (Date.now() < adminLockUntil) return;
+
+            const val = input.value;
+            if (val === ADMIN_PASS) {
+                adminWrongCount = 0;
+                errEl.textContent = '';
+                document.getElementById('admin-confirm-box').classList.add('show');
+            } else {
+                adminWrongCount++;
+                input.value = '';
+
+                if (adminWrongCount >= 2) {
+                    // 10 dakika kilitle
+                    adminLockUntil = Date.now() + 10 * 60 * 1000;
+                    showAdminLockMsg(600);
+                    // Shake animasyonu
+                    input.style.borderColor = '#ff0000';
+                    setTimeout(() => { input.style.borderColor = '#ff3366'; }, 1000);
+                } else {
+                    const kalan = 2 - adminWrongCount;
+                    errEl.textContent = `❌ YANLIŞ! ${kalan} hak kaldı`;
+                    errEl.style.color = '#ff3366';
+                    input.focus();
+                    setTimeout(() => { errEl.textContent = ''; }, 2000);
+                }
+            }
+        }
+
+        async function resetAllScores() {
+            const successEl = document.getElementById('admin-success');
+            const btn = document.querySelector('#admin-confirm-box .admin-btn-danger');
+            btn.textContent = '⏳ SİLİNİYOR...';
+            btn.disabled = true;
+
+            let fbOk = false;
+            // Firebase sil
+            if (db) {
+                try {
+                    await db.ref('scores').remove();
+                    fbOk = true;
+                } catch(e) { console.warn('Firebase reset failed:', e); }
+            }
+
+            // Local sil
+            try { localStorage.removeItem('slingfind_scores'); } catch(e) {}
+
+            successEl.textContent = fbOk ? '✅ TÜM SKORLAR SİLİNDİ!' : '✅ LOCAL SKORLAR SİLİNDİ!';
+            btn.textContent = '🗑 SKORLARI SİL';
+            btn.disabled = false;
+
+            setTimeout(() => {
+                closeAdminModal();
+                successEl.textContent = '';
+            }, 2500);
+        }
+
+        // ===== SETTINGS SYSTEM =====
+        let gameSettings = {
+            masterVol: 15,
+            sfxOn: true,
+            sfxVol: 100,
+            musicOn: true,
+            musicVol: 30,
+            trajectoryOn: true,
+            vibrationOn: true,
+            wakeLock: false,
+            lang: 'tr'
+        };
+        let wakeLockObj = null;
+        let bgMusicNode = null;
+        let bgMusicGain = null;
+
+        function saveSettings() {
+            try { localStorage.setItem('slingfind_settings', JSON.stringify(gameSettings)); } catch(e){}
+        }
+
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem('slingfind_settings');
+                if (raw) {
+                    const saved = JSON.parse(raw);
+                    Object.assign(gameSettings, saved);
+                }
+            } catch(e){}
+            applySettings();
+        }
+
+        function applySettings() {
+            // Master volume
+            masterVolume = gameSettings.masterVol / 100;
+            const mv = document.getElementById('st-master-vol');
+            if(mv) { mv.value = gameSettings.masterVol; updateSliderGradient(mv, '#00ffff'); }
+            const mvv = document.getElementById('st-master-val');
+            if(mvv) mvv.textContent = gameSettings.masterVol;
+
+            // Also sync in-game vol slider
+            const igSlider = document.getElementById('vol-slider');
+            if(igSlider) { igSlider.value = gameSettings.masterVol; setVolume(gameSettings.masterVol); }
+
+            // SFX volume
+            sfxVolume = (gameSettings.sfxVol ?? 100) / 100;
+            sfxEnabled = sfxVolume > 0;
+            const sfxSlider = document.getElementById('st-sfx-slider');
+            if(sfxSlider) { sfxSlider.value = gameSettings.sfxVol ?? 100; updateSliderGradient(sfxSlider, '#00ffff'); }
+            const sfxValEl = document.getElementById('st-sfx-val');
+            if(sfxValEl) sfxValEl.textContent = gameSettings.sfxVol ?? 100;
+
+            // Music (toggle kaldırıldı, slider ile kontrol)
+            const musV = document.getElementById('st-music-vol');
+            if(musV) { musV.value = gameSettings.musicVol; updateSliderGradient(musV, '#00ffff'); }
+            const musVV = document.getElementById('st-music-vol-val');
+            if(musVV) musVV.textContent = gameSettings.musicVol;
+            updateBgMusic();
+
+            // Trajectory
+            trajectoryEnabled = gameSettings.trajectoryOn;
+            const trajT = document.getElementById('st-traj-toggle');
+            if(trajT) trajT.checked = gameSettings.trajectoryOn;
+
+            // Vibration
+            const vibT = document.getElementById('st-vib-toggle');
+            if(vibT) vibT.checked = gameSettings.vibrationOn;
+
+            // Wake lock
+            const wakeT = document.getElementById('st-wake-toggle');
+            if(wakeT) wakeT.checked = gameSettings.wakeLock;
+
+            // Lang
+            if(gameSettings.lang) setLang(gameSettings.lang);
+        }
+
+        function updateSliderGradient(slider, color) {
+            const val = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+            slider.style.background = `linear-gradient(to right, ${color} ${val}%, #333 ${val}%)`;
+        }
+
+        // Settings handlers
+        function onSettingMasterVol(val) {
+            val = parseInt(val);
+            gameSettings.masterVol = val;
+            masterVolume = val / 100;
+            document.getElementById('st-master-val').textContent = val;
+            updateSliderGradient(document.getElementById('st-master-vol'), '#00ffff');
+            // Sync in-game slider
+            const igSlider = document.getElementById('vol-slider');
+            if(igSlider) { igSlider.value = val; setVolume(val); }
+            saveSettings();
+        }
+
+        let sfxEnabled = true;
+        let sfxVolume = 1.0; // 0-1 arası SFX çarpanı
+
+        function onSettingSfxVol(val) {
+            val = parseInt(val);
+            gameSettings.sfxVol = val;
+            sfxVolume = val / 100;
+            sfxEnabled = val > 0;
+            document.getElementById('st-sfx-val').textContent = val;
+            updateSliderGradient(document.getElementById('st-sfx-slider'), '#00ffff');
+            saveSettings();
+        }
+
+        let trajectoryEnabled = true;
+        function onSettingTrajectory(checked) {
+            gameSettings.trajectoryOn = checked;
+            trajectoryEnabled = checked;
+            saveSettings();
+        }
+
+        function onSettingMusic(checked) {
+            gameSettings.musicOn = checked;
+            saveSettings();
+            if(gameState === 'playing') {
+                updateBgMusic();
+            } else {
+                if(checked) startMenuMusic(); else stopMenuMusic();
+            }
+        }
+
+        function onSettingMusicVol(val) {
+            val = parseInt(val);
+            gameSettings.musicVol = val;
+            document.getElementById('st-music-vol-val').textContent = val;
+            updateSliderGradient(document.getElementById('st-music-vol'), '#00ffff');
+            const v = (val / 100) * 0.35;
+            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'].forEach(id => {
+                const a = document.getElementById(id);
+                if(a) a.volume = v;
+            });
+            saveSettings();
+        }
+
+        function onSettingVibration(checked) {
+            gameSettings.vibrationOn = checked;
+            saveSettings();
+        }
+
+        async function onSettingWakeLock(checked) {
+            gameSettings.wakeLock = checked;
+            saveSettings();
+            if(checked) {
+                try {
+                    if('wakeLock' in navigator) {
+                        wakeLockObj = await navigator.wakeLock.request('screen');
+                    }
+                } catch(e) { console.warn('WakeLock failed:', e); }
+            } else {
+                if(wakeLockObj) { await wakeLockObj.release(); wakeLockObj = null; }
+            }
+        }
+
+        function updateBgMusic() {
+            if(gameSettings.musicOn && gameState === 'playing') {
+                startBgMusic();
+            } else {
+                stopBgMusic();
+            }
+        }
+
+        const ALL_LEVEL_MUSIC = ['bgMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'];
+        let lastRandomMusicIdx = -1;
+
+        function getLevelMusicEl(level) {
+            const map = {
+                1: 'bgMusicEl',
+                2: 'level2MusicEl',
+                3: 'level3MusicEl',
+                4: 'level4MusicEl',
+                5: 'level5MusicEl',
+                6: 'level6MusicEl',
+                7: 'level7MusicEl',
+            };
+            if (map[level]) return document.getElementById(map[level]);
+            // 7+ için random ama aynı parça üst üste gelmesin
+            let idx;
+            do { idx = Math.floor(Math.random() * ALL_LEVEL_MUSIC.length); }
+            while (idx === lastRandomMusicIdx && ALL_LEVEL_MUSIC.length > 1);
+            lastRandomMusicIdx = idx;
+            return document.getElementById(ALL_LEVEL_MUSIC[idx]);
+        }
+
+        function startBgMusic() {
+            if(!gameSettings.musicOn) return;
+            const audio = getLevelMusicEl(currentLevel);
+            if(!audio) return;
+            // Zaten çalıyorsa tekrar başlatma
+            if(bgMusicNode === audio && !audio.paused) return;
+            stopBgMusic();
+            audio.currentTime = 0;
+            fadeInAudio(audio, (gameSettings.musicVol / 100) * 0.35, 1000);
+            bgMusicNode = audio;
+        }
+
+        function stopBgMusic(cb) {
+            const ids = ['bgMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'];
+            const playing = ids.map(id => document.getElementById(id)).filter(a => a && !a.paused);
+            bgMusicNode = null;
+            if (playing.length === 0) { if(cb) cb(); return; }
+            let done = 0;
+            playing.forEach(a => fadeOutAudio(a, 700, () => {
+                done++; if(done === playing.length && cb) cb();
+            }));
+        }
+
+        function startMenuMusic() {
+            if(!gameSettings.musicOn) return;
+            const audio = document.getElementById('menuMusicEl');
+            if(!audio) return;
+            audio.currentTime = 0;
+            fadeInAudio(audio, (gameSettings.musicVol / 100) * 0.35, 1000);
+        }
+
+        function stopMenuMusic(cb) {
+            const audio = document.getElementById('menuMusicEl');
+            if(!audio || audio.paused) { if(cb) cb(); return; }
+            fadeOutAudio(audio, 700, cb);
+        }
+
+        function showSettings() {
+            document.getElementById('settings-panel').classList.add('show');
+        }
+
+        function hideSettings() {
+            document.getElementById('settings-panel').classList.remove('show');
+        }
+
+        function setLangFromSettings(lang) {
+            setLang(lang);
+        }
+
+        function menuSettings() {
+            closeMenu();
+            showSettings();
+        }
+
         function startGame() {
             initAudio();
             overlay.classList.add('hidden');
             gameState = 'playing';
+            updateBgMusic();
             isPaused = false;
             document.getElementById('pause-overlay').classList.remove('show');
             currentLevel = 1; totalScore = 0;
@@ -2429,6 +4274,8 @@
             document.getElementById('sound-label').textContent = t('menuSound');
             document.getElementById('menu-hs-label').textContent = t('menuHiScores');
             document.getElementById('menu-home-label').textContent = t('menuHome');
+            const msl = document.getElementById('menu-settings-label');
+            if(msl) msl.textContent = t('menuSettings');
         }
 
         function togglePause() {
@@ -2479,7 +4326,10 @@
         function menuGoHome() {
             closeMenu();
             if (isPaused) { isPaused = false; document.getElementById('pause-overlay').classList.remove('show'); }
+            stopBgMusic();
             gameState = 'menu';
+            startMenuMusic();
+            window._fadingForGameOver = false;
             // Welcome ekranı tekrar göster
             const ws = document.getElementById('welcome-screen');
             ws.style.display = 'flex';
@@ -2504,7 +4354,23 @@
             resize();
             gameLoop();
         });
-        setVolume(15);
+
+        // Menü müziği: dil/isim/herhangi bir welcome screen butonuna basınca başla
+        function tryStartMenuMusic() {
+            if(!menuMusicStarted) {
+                menuMusicStarted = true;
+                startMenuMusic();
+            }
+        }
+        let menuMusicStarted = false;
+        // Welcome screen'deki tüm buton ve inputlara bağla
+        document.getElementById('ws-start-btn').addEventListener('click', tryStartMenuMusic);
+        document.getElementById('ws-hs-btn').addEventListener('click', tryStartMenuMusic);
+        document.getElementById('ws-settings-btn').addEventListener('click', tryStartMenuMusic);
+        document.getElementById('btn-tr').addEventListener('click', tryStartMenuMusic);
+        document.getElementById('btn-en').addEventListener('click', tryStartMenuMusic);
+        document.getElementById('player-name').addEventListener('focus', tryStartMenuMusic);
+        loadSettings();
 
         // Service Worker kaydet (PWA)
         if ('serviceWorker' in navigator) {
