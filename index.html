@@ -28,7 +28,7 @@
             color: white;
             display: flex; gap: 0; align-items: center; justify-content: space-around;
             box-shadow: 0 0 16px rgba(255, 51, 102, 0.4); z-index: 10;
-            white-space: nowrap;
+            white-space: nowrap; position: relative;
         }
         .hud-item { text-align: center; flex: 1; }
         .hud-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #00ffff; font-weight: bold; }
@@ -394,20 +394,20 @@
 
         /* HUD müzik butonu */
         #hud-music-btn {
-            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            position: absolute; right: 4px; top: 2px;
             background: rgba(0,229,255,0.12); border: 1.5px solid #00e5ff;
-            color: #00e5ff; font-size: 11px; font-weight: 900;
-            padding: 4px 8px; cursor: pointer; font-family: inherit;
+            color: #00e5ff; font-size: 10px; font-weight: 900;
+            padding: 2px 6px; cursor: pointer; font-family: inherit;
             letter-spacing: 1px; white-space: nowrap;
             transition: all 0.15s; border-radius: 2px;
-            display: flex; align-items: center; gap: 4px;
+            display: flex; align-items: center; gap: 3px; z-index: 11;
         }
         #hud-music-btn:hover { background: rgba(0,229,255,0.22); box-shadow: 0 0 8px #00e5ff; }
         #hud-music-btn.muted { border-color: #555; color: #555; background: transparent; }
 
         /* Müzik ses slider popup */
         #hud-music-popup {
-            position: absolute; right: 8px; top: 100%; margin-top: 6px;
+            position: absolute; right: 4px; top: 100%; margin-top: 4px;
             background: linear-gradient(160deg, #0a0318, #180a2b);
             border: 2px solid #00e5ff; box-shadow: 0 0 20px rgba(0,229,255,0.3);
             padding: 12px 14px; z-index: 15; min-width: 160px;
@@ -1686,6 +1686,7 @@
             slingshot.y = WALL.top + (WALL.bottom - WALL.top) * 0.55;
             if (!slingshot.pulling) { slingshot.pullX = slingshot.x; slingshot.pullY = slingshot.y; }
 
+            if (gameState === 'playing') initBgTheme(currentLevel, W, H);
             // Orientation değişince kartları yeniden yerleştir
             if (typeof getLayoutForLevel === 'function' && gameState === 'playing' && cards.length > 0 && !levelCleared) {
                 let layout = getLayoutForLevel(currentLevel);
@@ -1700,6 +1701,579 @@
             }
         }
 
+
+
+        // ===== LEVEL ARKAPLAN SİSTEMİ =====
+        let bgParticles = [];
+        let bgFrame = 0;
+        let currentBgTheme = 1;
+
+        const BG_THEMES = {
+            1: { // 🌿 Bahçe - yapraklar, meyveler
+                bg1: '#030d08', bg2: '#071a0f', bg3: '#0d2b18',
+                init(W, H) {
+                    let p = [];
+                    for (let i = 0; i < 35; i++) p.push({
+                        x: Math.random()*W, y: Math.random()*H,
+                        size: 8 + Math.random()*14,
+                        speed: 0.3 + Math.random()*0.5,
+                        sway: Math.random()*Math.PI*2,
+                        swaySpeed: 0.01 + Math.random()*0.02,
+                        swayAmp: 20 + Math.random()*30,
+                        rot: Math.random()*Math.PI*2,
+                        rotSpeed: (Math.random()-0.5)*0.04,
+                        icon: ['🍃','🌿','🍀','🌱','🍎','🍊'][Math.floor(Math.random()*6)],
+                        alpha: 0.12 + Math.random()*0.18
+                    });
+                    return p;
+                },
+                update(p, W, H) {
+                    p.forEach(pk => {
+                        pk.y += pk.speed;
+                        pk.sway += pk.swaySpeed;
+                        pk.x += Math.sin(pk.sway) * 0.4;
+                        pk.rot += pk.rotSpeed;
+                        if (pk.y > H + 30) { pk.y = -30; pk.x = Math.random()*W; }
+                        if (pk.x < -30) pk.x = W + 30;
+                        if (pk.x > W + 30) pk.x = -30;
+                    });
+                },
+                draw(ctx, p) {
+                    p.forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.translate(pk.x, pk.y);
+                        ctx.rotate(pk.rot);
+                        ctx.font = `${pk.size}px sans-serif`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(pk.icon, 0, 0);
+                        ctx.restore();
+                    });
+                }
+            },
+            2: { // 🌊 Okyanus - baloncuklar
+                bg1: '#020810', bg2: '#041828', bg3: '#062040',
+                init(W, H) {
+                    let p = [];
+                    for (let i = 0; i < 40; i++) p.push({
+                        x: Math.random()*W, y: H + Math.random()*H,
+                        r: 3 + Math.random()*12,
+                        speed: 0.4 + Math.random()*0.8,
+                        wobble: Math.random()*Math.PI*2,
+                        wobbleSpeed: 0.02 + Math.random()*0.03,
+                        wobbleAmp: 8 + Math.random()*20,
+                        alpha: 0.06 + Math.random()*0.12
+                    });
+                    return p;
+                },
+                update(p, W, H) {
+                    p.forEach(pk => {
+                        pk.y -= pk.speed;
+                        pk.wobble += pk.wobbleSpeed;
+                        pk.x += Math.sin(pk.wobble) * 0.5;
+                        if (pk.y < -20) { pk.y = H + 20; pk.x = Math.random()*W; }
+                    });
+                },
+                draw(ctx, p) {
+                    p.forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.beginPath();
+                        ctx.arc(pk.x, pk.y, pk.r, 0, Math.PI*2);
+                        ctx.strokeStyle = '#00aaff';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        ctx.fillStyle = 'rgba(0,150,255,0.15)';
+                        ctx.fill();
+                        ctx.restore();
+                    });
+                    // Dalgalı çizgiler
+                    ctx.save();
+                    ctx.globalAlpha = 0.04;
+                    ctx.strokeStyle = '#0088ff';
+                    ctx.lineWidth = 1;
+                    for (let w = 0; w < 4; w++) {
+                        ctx.beginPath();
+                        let yBase = (bgFrame*0.5 + w * (ctx.canvas.height/4)) % ctx.canvas.height;
+                        for (let x = 0; x < ctx.canvas.width; x += 4) {
+                            let y = yBase + Math.sin((x * 0.02) + bgFrame * 0.03) * 15;
+                            x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            },
+            3: { // 🔥 Volkan - kor parçacıklar
+                bg1: '#0d0300', bg2: '#1a0500', bg3: '#2a0800',
+                init(W, H) {
+                    let p = [];
+                    for (let i = 0; i < 50; i++) p.push({
+                        x: W*0.2 + Math.random()*W*0.6,
+                        y: H + Math.random()*60,
+                        size: 2 + Math.random()*5,
+                        vx: (Math.random()-0.5)*1.5,
+                        vy: -(1 + Math.random()*2.5),
+                        alpha: 0.3 + Math.random()*0.5,
+                        life: Math.random(),
+                        decay: 0.005 + Math.random()*0.01,
+                        color: ['#ff6600','#ff3300','#ffaa00','#ff0000','#ffcc00'][Math.floor(Math.random()*5)]
+                    });
+                    return p;
+                },
+                update(p, W, H) {
+                    p.forEach(pk => {
+                        pk.x += pk.vx;
+                        pk.vy -= 0.02; // yavaşla
+                        pk.y += pk.vy;
+                        pk.life -= pk.decay;
+                        pk.alpha = pk.life * 0.5;
+                        pk.size *= 0.995;
+                        if (pk.life <= 0) {
+                            pk.x = W*0.15 + Math.random()*W*0.7;
+                            pk.y = H + Math.random()*30;
+                            pk.vx = (Math.random()-0.5)*1.5;
+                            pk.vy = -(1 + Math.random()*2.5);
+                            pk.life = 0.8 + Math.random()*0.2;
+                            pk.size = 2 + Math.random()*5;
+                        }
+                    });
+                },
+                draw(ctx, p) {
+                    p.forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = Math.max(0, pk.alpha);
+                        ctx.fillStyle = pk.color;
+                        ctx.shadowColor = pk.color;
+                        ctx.shadowBlur = pk.size * 3;
+                        ctx.beginPath();
+                        ctx.arc(pk.x, pk.y, pk.size, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.restore();
+                    });
+                    // Alev titremesi - alt kısım parlamak
+                    ctx.save();
+                    let H2 = ctx.canvas.height;
+                    let flameGrad = ctx.createLinearGradient(0, H2*0.7, 0, H2);
+                    flameGrad.addColorStop(0, 'rgba(200,50,0,0)');
+                    flameGrad.addColorStop(1, `rgba(150,30,0,${0.04 + Math.sin(bgFrame*0.08)*0.02})`);
+                    ctx.fillStyle = flameGrad;
+                    ctx.fillRect(0, H2*0.7, ctx.canvas.width, H2*0.3);
+                    ctx.restore();
+                }
+            },
+            4: { // ❄️ Buz - kar taneleri
+                bg1: '#020810', bg2: '#050f1a', bg3: '#081520',
+                init(W, H) {
+                    let p = [];
+                    for (let i = 0; i < 55; i++) p.push({
+                        x: Math.random()*W, y: Math.random()*H,
+                        size: 2 + Math.random()*8,
+                        speed: 0.3 + Math.random()*0.7,
+                        drift: (Math.random()-0.5)*0.5,
+                        wobble: Math.random()*Math.PI*2,
+                        wobbleSpeed: 0.01 + Math.random()*0.02,
+                        alpha: 0.1 + Math.random()*0.25,
+                        rot: Math.random()*Math.PI/3,
+                        type: Math.floor(Math.random()*3) // 0:daire, 1:kristal, 2:nokta
+                    });
+                    return p;
+                },
+                update(p, W, H) {
+                    p.forEach(pk => {
+                        pk.y += pk.speed;
+                        pk.wobble += pk.wobbleSpeed;
+                        pk.x += pk.drift + Math.sin(pk.wobble)*0.3;
+                        pk.rot += 0.005;
+                        if (pk.y > H+20) { pk.y = -10; pk.x = Math.random()*W; }
+                        if (pk.x < -20) pk.x = W+20;
+                        if (pk.x > W+20) pk.x = -20;
+                    });
+                },
+                draw(ctx, p) {
+                    p.forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.translate(pk.x, pk.y);
+                        if (pk.type === 0) {
+                            ctx.beginPath();
+                            ctx.arc(0, 0, pk.size/2, 0, Math.PI*2);
+                            ctx.fillStyle = '#aaddff';
+                            ctx.fill();
+                        } else if (pk.type === 1) {
+                            // Kar tanesi çizgileri
+                            ctx.strokeStyle = '#cceeff';
+                            ctx.lineWidth = 1;
+                            ctx.rotate(pk.rot);
+                            for (let a = 0; a < 6; a++) {
+                                ctx.beginPath();
+                                ctx.moveTo(0,0);
+                                ctx.lineTo(0, pk.size);
+                                ctx.stroke();
+                                ctx.rotate(Math.PI/3);
+                            }
+                        } else {
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(-pk.size/4, -pk.size/4, pk.size/2, pk.size/2);
+                        }
+                        ctx.restore();
+                    });
+                    // Buz parıltısı
+                    if (Math.random() < 0.05) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.03 + Math.random()*0.04;
+                        let sg = ctx.createRadialGradient(
+                            Math.random()*ctx.canvas.width, Math.random()*ctx.canvas.height, 0,
+                            Math.random()*ctx.canvas.width, Math.random()*ctx.canvas.height, 80
+                        );
+                        sg.addColorStop(0, '#aaddff'); sg.addColorStop(1, 'transparent');
+                        ctx.fillStyle = sg;
+                        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                        ctx.restore();
+                    }
+                }
+            },
+            5: { // ⚡ Fırtına - yağmur + şimşek
+                bg1: '#010305', bg2: '#020508', bg3: '#030710',
+                init(W, H) {
+                    let p = [];
+                    for (let i = 0; i < 80; i++) p.push({
+                        x: Math.random()*W, y: Math.random()*H,
+                        len: 8 + Math.random()*18,
+                        speed: 8 + Math.random()*8,
+                        alpha: 0.08 + Math.random()*0.15,
+                        angle: 0.3 // yağmur açısı
+                    });
+                    // Şimşek verileri
+                    for (let i = 0; i < 3; i++) p.push({
+                        isLightning: true,
+                        x: Math.random()*W, timer: Math.floor(Math.random()*120),
+                        alpha: 0, active: false
+                    });
+                    return p;
+                },
+                update(p, W, H) {
+                    p.forEach(pk => {
+                        if (pk.isLightning) {
+                            pk.timer--;
+                            if (pk.timer <= 0) {
+                                pk.active = true; pk.alpha = 0.4 + Math.random()*0.4;
+                                pk.x = Math.random()*W;
+                                pk.timer = 80 + Math.floor(Math.random()*120);
+                            }
+                            if (pk.active) {
+                                pk.alpha -= 0.05;
+                                if (pk.alpha <= 0) { pk.active = false; pk.alpha = 0; }
+                            }
+                            return;
+                        }
+                        pk.y += pk.speed;
+                        pk.x -= pk.speed * pk.angle;
+                        if (pk.y > H+20) { pk.y = -10; pk.x = Math.random()*W+H*pk.angle; }
+                        if (pk.x < -5) { pk.x = W + 5; pk.y = Math.random()*H; }
+                    });
+                },
+                draw(ctx, p, W, H) {
+                    // Yağmur
+                    ctx.save();
+                    ctx.strokeStyle = '#88aacc';
+                    p.filter(pk => !pk.isLightning).forEach(pk => {
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.beginPath();
+                        ctx.moveTo(pk.x, pk.y);
+                        ctx.lineTo(pk.x - pk.len*pk.angle, pk.y + pk.len);
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    });
+                    ctx.restore();
+                    // Şimşek
+                    p.filter(pk => pk.isLightning && pk.active).forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.strokeStyle = '#aaccff';
+                        ctx.shadowColor = '#aaccff';
+                        ctx.shadowBlur = 20;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        let lx = pk.x, ly = 0;
+                        ctx.moveTo(lx, ly);
+                        while (ly < H) {
+                            lx += (Math.random()-0.5)*40;
+                            ly += 20 + Math.random()*25;
+                            ctx.lineTo(lx, ly);
+                        }
+                        ctx.stroke();
+                        ctx.restore();
+                    });
+                    // Flaş
+                    let lightning = p.find(pk => pk.isLightning && pk.active && pk.alpha > 0.3);
+                    if (lightning) {
+                        ctx.save();
+                        ctx.globalAlpha = lightning.alpha * 0.08;
+                        ctx.fillStyle = '#8899ff';
+                        ctx.fillRect(0, 0, W, H);
+                        ctx.restore();
+                    }
+                }
+            },
+            6: { // 🌌 Uzay - yıldızlar + meteoritler
+                bg1: '#000005', bg2: '#000008', bg3: '#02000f',
+                init(W, H) {
+                    let p = [];
+                    // Yıldızlar
+                    for (let i = 0; i < 60; i++) p.push({
+                        isStar: true,
+                        x: Math.random()*W, y: Math.random()*H,
+                        r: 0.5 + Math.random()*2,
+                        alpha: 0.2 + Math.random()*0.6,
+                        twinkle: Math.random()*Math.PI*2,
+                        twinkleSpeed: 0.02 + Math.random()*0.04
+                    });
+                    // Meteoritler
+                    for (let i = 0; i < 5; i++) p.push({
+                        isMeteor: true,
+                        x: Math.random()*W, y: Math.random()*H*0.5,
+                        speed: 3 + Math.random()*4,
+                        angle: Math.PI*0.2,
+                        len: 40 + Math.random()*60,
+                        alpha: 0,
+                        timer: Math.floor(Math.random()*200)
+                    });
+                    // Nebula noktaları
+                    for (let i = 0; i < 15; i++) p.push({
+                        isNebula: true,
+                        x: Math.random()*W, y: Math.random()*H,
+                        r: 30 + Math.random()*80,
+                        alpha: 0.02 + Math.random()*0.04,
+                        color: ['#4400aa','#002288','#880044','#004488'][Math.floor(Math.random()*4)]
+                    });
+                    return p;
+                },
+                update(p, W, H) {
+                    p.forEach(pk => {
+                        if (pk.isStar) {
+                            pk.twinkle += pk.twinkleSpeed;
+                            pk.alpha = 0.2 + Math.abs(Math.sin(pk.twinkle)) * 0.6;
+                        } else if (pk.isMeteor) {
+                            pk.timer--;
+                            if (pk.timer > 0) return;
+                            pk.x += Math.cos(pk.angle) * pk.speed;
+                            pk.y += Math.sin(pk.angle) * pk.speed;
+                            pk.alpha = Math.min(0.8, pk.alpha + 0.08);
+                            if (pk.x > W+100 || pk.y > H+100) {
+                                pk.x = -50 + Math.random()*W*0.5;
+                                pk.y = -50 + Math.random()*H*0.3;
+                                pk.timer = 100 + Math.floor(Math.random()*300);
+                                pk.alpha = 0;
+                                pk.speed = 3 + Math.random()*4;
+                            }
+                        }
+                    });
+                },
+                draw(ctx, p) {
+                    // Nebula
+                    p.filter(pk => pk.isNebula).forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        let g = ctx.createRadialGradient(pk.x, pk.y, 0, pk.x, pk.y, pk.r);
+                        g.addColorStop(0, pk.color); g.addColorStop(1, 'transparent');
+                        ctx.fillStyle = g;
+                        ctx.beginPath(); ctx.arc(pk.x, pk.y, pk.r, 0, Math.PI*2); ctx.fill();
+                        ctx.restore();
+                    });
+                    // Yıldızlar
+                    p.filter(pk => pk.isStar).forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.fillStyle = '#ffffff';
+                        ctx.shadowColor = '#aabbff';
+                        ctx.shadowBlur = pk.r * 2;
+                        ctx.beginPath(); ctx.arc(pk.x, pk.y, pk.r, 0, Math.PI*2); ctx.fill();
+                        ctx.restore();
+                    });
+                    // Meteoritler
+                    p.filter(pk => pk.isMeteor && pk.alpha > 0).forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        let g = ctx.createLinearGradient(
+                            pk.x, pk.y,
+                            pk.x - Math.cos(pk.angle)*pk.len, pk.y - Math.sin(pk.angle)*pk.len
+                        );
+                        g.addColorStop(0, '#ffffff'); g.addColorStop(1, 'transparent');
+                        ctx.strokeStyle = g;
+                        ctx.lineWidth = 2;
+                        ctx.shadowColor = '#aabbff'; ctx.shadowBlur = 6;
+                        ctx.beginPath();
+                        ctx.moveTo(pk.x, pk.y);
+                        ctx.lineTo(pk.x - Math.cos(pk.angle)*pk.len, pk.y - Math.sin(pk.angle)*pk.len);
+                        ctx.stroke();
+                        ctx.restore();
+                    });
+                }
+            },
+            7: { // 🍭 Şeker Dünyası - konfetiler + şeker
+                bg1: '#08000f', bg2: '#100018', bg3: '#180020',
+                init(W, H) {
+                    let p = [];
+                    const icons = ['🍭','🍬','🍫','🧁','🍰','⭐','💎','🌈'];
+                    for (let i = 0; i < 30; i++) p.push({
+                        x: Math.random()*W, y: Math.random()*H,
+                        size: 10 + Math.random()*16,
+                        speed: 0.3 + Math.random()*0.6,
+                        sway: Math.random()*Math.PI*2,
+                        swaySpeed: 0.015 + Math.random()*0.025,
+                        swayAmp: 25 + Math.random()*40,
+                        rot: Math.random()*Math.PI*2,
+                        rotSpeed: (Math.random()-0.5)*0.05,
+                        icon: icons[Math.floor(Math.random()*icons.length)],
+                        alpha: 0.1 + Math.random()*0.2
+                    });
+                    // Konfetiler
+                    const cols = ['#ff66aa','#ffcc00','#00ddff','#ff3366','#99ff00','#cc44ff'];
+                    for (let i = 0; i < 40; i++) p.push({
+                        isConfetti: true,
+                        x: Math.random()*W, y: Math.random()*H,
+                        w: 5 + Math.random()*8, h: 3 + Math.random()*5,
+                        speed: 0.5 + Math.random()*1,
+                        drift: (Math.random()-0.5)*0.8,
+                        rot: Math.random()*Math.PI*2,
+                        rotSpeed: (Math.random()-0.5)*0.1,
+                        color: cols[Math.floor(Math.random()*cols.length)],
+                        alpha: 0.1 + Math.random()*0.2
+                    });
+                    return p;
+                },
+                update(p, W, H) {
+                    p.forEach(pk => {
+                        if (pk.isConfetti) {
+                            pk.y += pk.speed; pk.x += pk.drift;
+                            pk.rot += pk.rotSpeed;
+                            if (pk.y > H+20) { pk.y = -10; pk.x = Math.random()*W; }
+                            return;
+                        }
+                        pk.y += pk.speed;
+                        pk.sway += pk.swaySpeed;
+                        pk.x += Math.sin(pk.sway) * 0.5;
+                        pk.rot += pk.rotSpeed;
+                        if (pk.y > H+30) { pk.y = -30; pk.x = Math.random()*W; }
+                    });
+                },
+                draw(ctx, p) {
+                    p.filter(pk => pk.isConfetti).forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.translate(pk.x, pk.y); ctx.rotate(pk.rot);
+                        ctx.fillStyle = pk.color;
+                        ctx.fillRect(-pk.w/2, -pk.h/2, pk.w, pk.h);
+                        ctx.restore();
+                    });
+                    p.filter(pk => !pk.isConfetti).forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.translate(pk.x, pk.y); ctx.rotate(pk.rot);
+                        ctx.font = `${pk.size}px sans-serif`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(pk.icon, 0, 0);
+                        ctx.restore();
+                    });
+                }
+            },
+            8: { // 🔮 Karanlık Portal - enerji dalgaları
+                bg1: '#050008', bg2: '#08000f', bg3: '#0f0018',
+                init(W, H) {
+                    let p = [];
+                    // Enerji parçacıkları
+                    for (let i = 0; i < 50; i++) p.push({
+                        isEnergy: true,
+                        angle: Math.random()*Math.PI*2,
+                        radius: 80 + Math.random()*(Math.min(W,H)*0.35),
+                        speed: 0.008 + Math.random()*0.015,
+                        size: 2 + Math.random()*5,
+                        alpha: 0.1 + Math.random()*0.3,
+                        color: ['#aa00ff','#ff0088','#4400cc','#ff3366','#7700ff'][Math.floor(Math.random()*5)],
+                        centerOffX: (Math.random()-0.5)*100,
+                        centerOffY: (Math.random()-0.5)*100
+                    });
+                    // Portal halkalar
+                    for (let i = 0; i < 4; i++) p.push({
+                        isRing: true,
+                        radius: 40 + i*35,
+                        alpha: 0.03 + i*0.01,
+                        phase: i * Math.PI / 2,
+                        speed: 0.005 + i*0.003
+                    });
+                    return p;
+                },
+                update(p, W, H) {
+                    p.forEach(pk => {
+                        if (pk.isEnergy) {
+                            pk.angle += pk.speed;
+                        } else if (pk.isRing) {
+                            pk.phase += pk.speed;
+                        }
+                    });
+                },
+                draw(ctx, p, W, H) {
+                    const cx = W/2, cy = H/2;
+                    // Portal halkalar
+                    p.filter(pk => pk.isRing).forEach(pk => {
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha + Math.sin(pk.phase)*0.02;
+                        ctx.strokeStyle = '#8800ff';
+                        ctx.shadowColor = '#aa00ff';
+                        ctx.shadowBlur = 15;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, pk.radius, 0, Math.PI*2);
+                        ctx.stroke();
+                        ctx.restore();
+                    });
+                    // Enerji parçacıkları
+                    p.filter(pk => pk.isEnergy).forEach(pk => {
+                        let x = cx + pk.centerOffX + Math.cos(pk.angle) * pk.radius;
+                        let y = cy + pk.centerOffY + Math.sin(pk.angle) * pk.radius;
+                        ctx.save();
+                        ctx.globalAlpha = pk.alpha;
+                        ctx.fillStyle = pk.color;
+                        ctx.shadowColor = pk.color;
+                        ctx.shadowBlur = pk.size * 4;
+                        ctx.beginPath();
+                        ctx.arc(x, y, pk.size, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.restore();
+                    });
+                }
+            }
+        };
+
+        function getThemeForLevel(level) {
+            // Level 1-7 eşleşmiş temalar, 8+ tekrar döner
+            return ((level - 1) % 8) + 1;
+        }
+
+        function initBgTheme(level, W, H) {
+            currentBgTheme = getThemeForLevel(level);
+            const theme = BG_THEMES[currentBgTheme];
+            bgParticles = theme.init(W, H);
+        }
+
+        function drawBackground() {
+            const theme = BG_THEMES[currentBgTheme];
+            if (!theme) return;
+            bgFrame++;
+
+            // Tema arka plan gradyanı
+            ctx.fillStyle = theme.bg1; ctx.fillRect(0, 0, W, H);
+            let grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, theme.bg1);
+            grad.addColorStop(0.5, theme.bg2);
+            grad.addColorStop(1, theme.bg3);
+            ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+
+            // Parçacıkları güncelle ve çiz
+            theme.update(bgParticles, W, H);
+            theme.draw(ctx, bgParticles, W, H);
+        }
 
         // ===== MEYVE EŞLEŞMEEFFEKTİ =====
         let fruitParticles = [];
@@ -2255,6 +2829,7 @@
         function initLevel(level) {
             cards = []; projectiles = []; fxParticles = []; fruitParticles = [];
             window._fadingForGameOver = false;
+            initBgTheme(level, W, H);
             canShoot = true; levelCleared = false;
             firstHitCard = null; matchedPairs = 0;
             currentCombo = 1; shotsFired = 0;
@@ -2308,8 +2883,11 @@
 
             updateHUD();
             // Level geçişinde fade out → fade in
+            const _lvl = level;
             stopBgMusic(() => {
-                if (gameState === 'playing') startBgMusic();
+                if (gameState === 'playing' && currentLevel === _lvl) {
+                    setTimeout(() => startBgMusic(), 200);
+                }
             });
         }
 
@@ -2532,25 +3110,57 @@
                     let simVy = Math.sin(angle) * velocity;
                     let simX = sx, simY = sy - 8;
 
-                    if (trajectoryEnabled) for (let i = 1; i <= 30; i++) {
-                        simX += simVx * 0.6; simY += simVy * 0.6;
-                        if (simX > WALL.right) { simX = WALL.right; simVx *= -BOUNCE_DAMPING; }
-                        if (simX < WALL.left) { simX = WALL.left; simVx *= -BOUNCE_DAMPING; }
-                        if (simY < WALL.top) { simY = WALL.top; simVy *= -BOUNCE_DAMPING; }
-                        if (simY > WALL.bottom) { simY = WALL.bottom; simVy *= -BOUNCE_DAMPING; }
+                    if (trajectoryEnabled) {
+                        const STEPS = 120;
+                        const STEP_SIZE = 0.7;
+                        let dotCount = 0;
+                        let wallBounces = 0;
+                        for (let i = 1; i <= STEPS; i++) {
+                            simX += simVx * STEP_SIZE;
+                            simY += simVy * STEP_SIZE;
+                            let bounced = false;
+                            if (simX > WALL.right)  { simX = WALL.right;  simVx *= -BOUNCE_DAMPING; bounced = true; wallBounces++; }
+                            if (simX < WALL.left)   { simX = WALL.left;   simVx *= -BOUNCE_DAMPING; bounced = true; wallBounces++; }
+                            if (simY < WALL.top)    { simY = WALL.top;    simVy *= -BOUNCE_DAMPING; bounced = true; wallBounces++; }
+                            if (simY > WALL.bottom) { simY = WALL.bottom; simVy *= -BOUNCE_DAMPING; bounced = true; wallBounces++; }
 
-                        ctx.fillStyle = `rgba(0, 255, 255, ${1 - (i/31)})`;
-                        ctx.beginPath(); ctx.arc(simX, simY, Math.max(1, 5 - i*0.12), 0, Math.PI*2); ctx.fill();
+                            // Her 3 adımda nokta çiz (sık nokta = yakın, seyrek = uzak)
+                            if (i % 3 === 0) {
+                                let progress = i / STEPS;
+                                let alpha = (1 - progress) * (wallBounces < 2 ? 0.9 : wallBounces < 4 ? 0.5 : 0.25);
+                                let dotSize = Math.max(1, 4.5 - progress * 3);
+                                // Duvar sekme noktasında parlak işaret
+                                if (bounced) {
+                                    ctx.save();
+                                    ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 1.5})`;
+                                    ctx.shadowColor = '#ffcc00'; ctx.shadowBlur = 8;
+                                    ctx.beginPath(); ctx.arc(simX, simY, dotSize + 2, 0, Math.PI*2); ctx.fill();
+                                    ctx.restore();
+                                }
+                                // Normal yörünge noktası
+                                let r = Math.round(0 + wallBounces * 60);
+                                let g = Math.round(255 - wallBounces * 50);
+                                let b = 255;
+                                ctx.fillStyle = `rgba(${Math.min(255,r)},${Math.max(0,g)},${b},${alpha})`;
+                                ctx.beginPath(); ctx.arc(simX, simY, dotSize, 0, Math.PI*2); ctx.fill();
+                                dotCount++;
+                            }
+                            if (wallBounces >= 6) break; // 6 duvar sekme sonra bırak
+                        }
                     }
                 }
             }
         }
 
         function gameLoop() {
-            ctx.fillStyle = '#05020c'; ctx.fillRect(0, 0, W, H);
-            let grad = ctx.createLinearGradient(0, 0, 0, H);
-            grad.addColorStop(0, '#05020c'); grad.addColorStop(0.5, '#130826'); grad.addColorStop(1, '#240d3a');
-            ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+            if (gameState === 'playing') {
+                drawBackground();
+            } else {
+                ctx.fillStyle = '#05020c'; ctx.fillRect(0, 0, W, H);
+                let grad = ctx.createLinearGradient(0, 0, 0, H);
+                grad.addColorStop(0, '#05020c'); grad.addColorStop(0.5, '#130826'); grad.addColorStop(1, '#240d3a');
+                ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+            }
 
             drawWalls();
 
