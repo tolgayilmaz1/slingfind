@@ -809,6 +809,12 @@
             font-size: 72px; line-height: 1;
             animation: pausePulse 1.4s ease-in-out infinite;
         }
+        @keyframes surpriseAnim {
+            0% { opacity:0; transform:translate(-50%,-50%) scale(0.5); }
+            15% { opacity:1; transform:translate(-50%,-50%) scale(1.1); }
+            80% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+            100% { opacity:0; transform:translate(-50%,-50%) scale(0.9); }
+        }
         @keyframes pausePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.92)} }
         #pause-text {
             font-size: 28px; font-weight: 900; color: #fff;
@@ -1702,6 +1708,436 @@
         }
 
 
+
+
+        // ===== TORNADO & KARA DELİK =====
+        let hazards = []; // tornado ve kara delikler
+
+        class Tornado {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 1.2;
+                this.vy = (Math.random() - 0.5) * 1.2;
+                this.radius = 28;
+                this.angle = 0;
+                this.color1 = ['#00ccff','#aa00ff','#00ffaa','#ffaa00'][Math.floor(Math.random()*4)];
+                this.color2 = ['#ffffff','#ff00aa','#ffff00','#ff4400'][Math.floor(Math.random()*4)];
+                this.type = 'tornado';
+                this.particles = [];
+                this.active = true;
+                this.capturedBall = null;
+                this.captureTimer = 0;
+                for (let i = 0; i < 12; i++) {
+                    this.particles.push({
+                        angle: (i / 12) * Math.PI * 2,
+                        r: 10 + Math.random() * 18,
+                        speed: 0.08 + Math.random() * 0.06,
+                        size: 3 + Math.random() * 4,
+                        alpha: 0.5 + Math.random() * 0.5
+                    });
+                }
+            }
+
+            update(W, H) {
+                this.x += this.vx; this.y += this.vy;
+                this.angle += 0.06;
+
+                // Duvardan sekme
+                if (this.x < WALL.left + this.radius)  { this.x = WALL.left + this.radius;  this.vx *= -1; }
+                if (this.x > WALL.right - this.radius)  { this.x = WALL.right - this.radius;  this.vx *= -1; }
+                if (this.y < WALL.top + this.radius)    { this.y = WALL.top + this.radius;    this.vy *= -1; }
+                if (this.y > WALL.bottom - this.radius) { this.y = WALL.bottom - this.radius; this.vy *= -1; }
+
+                this.particles.forEach(p => { p.angle += p.speed; });
+
+                // Captured ball döndür
+                if (this.capturedBall && this.captureTimer > 0) {
+                    this.captureTimer--;
+                    this.capturedBall.x = this.x;
+                    this.capturedBall.y = this.y;
+                    this.capturedBall.vx = 0;
+                    this.capturedBall.vy = 0;
+                    if (this.captureTimer === 0) {
+                        // Rastgele yöne fırlat
+                        let angle = Math.random() * Math.PI * 2;
+                        let speed = 8 + Math.random() * 6;
+                        this.capturedBall.vx = Math.cos(angle) * speed;
+                        this.capturedBall.vy = Math.sin(angle) * speed;
+                        this.capturedBall.speedMult = Math.max(this.capturedBall.speedMult, 1.5);
+                        this.capturedBall = null;
+                    }
+                }
+            }
+
+            checkBall(ball) {
+                if (this.capturedBall || this.captureTimer > 0) return;
+                let dist = Math.hypot(ball.x - this.x, ball.y - this.y);
+                if (dist < this.radius + ball.radius) {
+                    this.capturedBall = ball;
+                    this.captureTimer = 50; // ~0.8sn
+                    playTornadoSound();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle * 0.3);
+
+                const H = 54, topW = 32, botW = 5;
+                const layers = 10;
+
+                // Hortum gövdesi - yukarıdan aşağıya daralan huni
+                for (let i = 0; i < layers; i++) {
+                    let t = i / (layers - 1);
+                    let y = -H/2 + t * H;
+                    let w = topW * (1 - t * 0.85) + botW * t;
+                    let twist = Math.sin(this.angle * 2 + t * Math.PI * 3) * w * 0.35;
+                    let alpha = 0.18 + t * 0.25;
+
+                    // Ana şerit
+                    ctx.beginPath();
+                    ctx.ellipse(twist, y, w, 4 + (1-t)*6, 0, 0, Math.PI*2);
+                    let c1 = this.color1, c2 = this.color2;
+                    ctx.fillStyle = i % 2 === 0 ? c1 : c2;
+                    ctx.globalAlpha = alpha;
+                    ctx.shadowColor = c1;
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                }
+
+                // Dönen dış parçacıklar - hortuma saçılmış debris
+                this.particles.forEach(p => {
+                    let t = (p.angle % (Math.PI*2)) / (Math.PI*2);
+                    let py = -H/2 + t * H;
+                    let maxR = topW * (1 - t * 0.8);
+                    let px = Math.cos(p.angle + this.angle * 2) * maxR * 0.9;
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha * (0.4 + t * 0.4);
+                    ctx.fillStyle = this.color2;
+                    ctx.shadowColor = this.color2;
+                    ctx.shadowBlur = 6;
+                    ctx.beginPath();
+                    ctx.arc(px, py, p.size * (0.4 + (1-t) * 0.8), 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                // Uç nokta (sivri alt)
+                ctx.beginPath();
+                ctx.arc(0, H/2, 4, 0, Math.PI*2);
+                ctx.fillStyle = this.color1;
+                ctx.globalAlpha = 0.9;
+                ctx.shadowColor = this.color1;
+                ctx.shadowBlur = 12;
+                ctx.fill();
+
+                // İçteki spiral enerji çizgisi
+                ctx.beginPath();
+                ctx.globalAlpha = 0.5;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                for (let a = 0; a < Math.PI * 5; a += 0.15) {
+                    let t2 = a / (Math.PI * 5);
+                    let r2 = topW * (1 - t2 * 0.9) * 0.6;
+                    let sx2 = Math.cos(a + this.angle * 3) * r2;
+                    let sy2 = -H/2 + t2 * H;
+                    a < 0.15 ? ctx.moveTo(sx2, sy2) : ctx.lineTo(sx2, sy2);
+                }
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        class BlackHole {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                this.radius = 22;
+                this.angle = 0;
+                this.color = ['#aa00ff','#ff0055','#0044ff','#ff6600'][Math.floor(Math.random()*4)];
+                this.type = 'blackhole';
+                this.active = true;
+                this.capturedBall = null;
+                this.captureTimer = 0;
+                this.teleporting = false;
+            }
+
+            update(W, H) {
+                this.x += this.vx; this.y += this.vy;
+                this.angle += 0.04;
+
+                if (this.x < WALL.left + this.radius)  { this.x = WALL.left + this.radius;  this.vx *= -1; }
+                if (this.x > WALL.right - this.radius)  { this.x = WALL.right - this.radius;  this.vx *= -1; }
+                if (this.y < WALL.top + this.radius)    { this.y = WALL.top + this.radius;    this.vy *= -1; }
+                if (this.y > WALL.bottom - this.radius) { this.y = WALL.bottom - this.radius; this.vy *= -1; }
+
+                if (this.capturedBall && this.captureTimer > 0) {
+                    this.captureTimer--;
+                    // Topu içine çek
+                    this.capturedBall.x += (this.x - this.capturedBall.x) * 0.3;
+                    this.capturedBall.y += (this.y - this.capturedBall.y) * 0.3;
+                    this.capturedBall.vx = 0; this.capturedBall.vy = 0;
+
+                    if (this.captureTimer === 0) {
+                        // Rastgele bir yerden fırlat
+                        let ex = WALL.left + (WALL.right - WALL.left) * (0.2 + Math.random() * 0.6);
+                        let ey = WALL.top + (WALL.bottom - WALL.top) * (0.2 + Math.random() * 0.6);
+                        this.capturedBall.x = ex;
+                        this.capturedBall.y = ey;
+                        let angle = Math.random() * Math.PI * 2;
+                        let speed = 7 + Math.random() * 7;
+                        this.capturedBall.vx = Math.cos(angle) * speed;
+                        this.capturedBall.vy = Math.sin(angle) * speed;
+                        this.capturedBall = null;
+                        playBlackholeSound();
+                    }
+                }
+            }
+
+            checkBall(ball) {
+                if (this.capturedBall) return;
+                let dist = Math.hypot(ball.x - this.x, ball.y - this.y);
+                if (dist < this.radius + ball.radius) {
+                    this.capturedBall = ball;
+                    this.captureTimer = 60; // ~1sn
+                    playBlackholeSound();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Çekiş halkalar
+                for (let i = 3; i >= 1; i--) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius * i * 0.5, 0, Math.PI * 2);
+                    ctx.strokeStyle = this.color;
+                    ctx.globalAlpha = 0.15 / i;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                // Dönen spiral
+                ctx.beginPath();
+                for (let a = 0; a < Math.PI * 4; a += 0.1) {
+                    let r = (a / (Math.PI * 4)) * this.radius;
+                    let x = Math.cos(a + this.angle) * r;
+                    let y = Math.sin(a + this.angle) * r;
+                    a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = this.color;
+                ctx.globalAlpha = 0.7;
+                ctx.lineWidth = 1.5;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+
+                // Merkez karanlık
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius * 0.45, 0, Math.PI * 2);
+                let g = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius * 0.45);
+                g.addColorStop(0, 'rgba(0,0,0,1)');
+                g.addColorStop(1, this.color);
+                ctx.fillStyle = g;
+                ctx.globalAlpha = 1;
+                ctx.fill();
+
+                // 🕳 emoji
+                ctx.globalAlpha = 0.8;
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🕳', 0, 0);
+
+                ctx.restore();
+            }
+        }
+
+        function initHazards(level, W, H) {
+            hazards = [];
+            if (level < 10) return; // 10. levelden önce yok
+
+            // 10+: tornado, 15+: 2 tornado, 10+: kara delik, 18+: 2 kara delik
+            let tornadoCount = level >= 15 ? 2 : 1;
+            let blackholeCount = level >= 18 ? 2 : level >= 10 ? 1 : 0;
+
+            let safeZone = slingshot.x + 120; // Sapandan uzak
+
+            for (let i = 0; i < tornadoCount; i++) {
+                let x = safeZone + Math.random() * (WALL.right - safeZone - 60) + 30;
+                let y = WALL.top + 60 + Math.random() * (WALL.bottom - WALL.top - 120);
+                hazards.push(new Tornado(x, y));
+            }
+            for (let i = 0; i < blackholeCount; i++) {
+                let x = safeZone + Math.random() * (WALL.right - safeZone - 60) + 30;
+                let y = WALL.top + 60 + Math.random() * (WALL.bottom - WALL.top - 120);
+                hazards.push(new BlackHole(x, y));
+            }
+        }
+
+        function updateHazards() {
+            hazards.forEach(h => {
+                h.update(W, H);
+                projectiles.forEach(p => {
+                    if (p.active && !p._captured) h.checkBall(p);
+                });
+            });
+        }
+
+        function drawHazards() {
+            hazards.forEach(h => h.draw());
+        }
+
+        // Ses efektleri
+        function playTornadoSound() {
+            if (!audioCtx || !sfxEnabled) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let g = audioCtx.createGain();
+                let lfo = audioCtx.createOscillator();
+                let lfoG = audioCtx.createGain();
+                lfo.frequency.value = 12;
+                lfoG.gain.value = 80;
+                lfo.connect(lfoG); lfoG.connect(osc.frequency);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.5);
+                g.gain.setValueAtTime(0.12 * masterVolume * sfxVolume, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                osc.connect(g); g.connect(audioCtx.destination);
+                lfo.start(); osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+                lfo.stop(audioCtx.currentTime + 0.5);
+            } catch(e) {}
+        }
+
+        function playBlackholeSound() {
+            if (!audioCtx || !sfxEnabled) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let g = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.8);
+                g.gain.setValueAtTime(0.15 * masterVolume * sfxVolume, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.8);
+                osc.connect(g); g.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+                // Çıkış sesi
+                setTimeout(() => {
+                    try {
+                        let o2 = audioCtx.createOscillator();
+                        let g2 = audioCtx.createGain();
+                        o2.type = 'triangle';
+                        o2.frequency.setValueAtTime(60, audioCtx.currentTime);
+                        o2.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.3);
+                        g2.gain.setValueAtTime(0.18 * masterVolume * sfxVolume, audioCtx.currentTime);
+                        g2.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                        o2.connect(g2); g2.connect(audioCtx.destination);
+                        o2.start(); o2.stop(audioCtx.currentTime + 0.3);
+                    } catch(e){}
+                }, 900);
+            } catch(e) {}
+        }
+
+
+        // ===== LEVEL SÜRPRİZLERİ =====
+        let movingCards = false;
+        let multiShotMode = false;
+        let ghostMode = false;
+        let speedCards = false;
+
+        function applyLevelSurprises(level) {
+            movingCards = false;
+            multiShotMode = false;
+            ghostMode = false;
+            speedCards = false;
+
+            if (level >= 20) {
+                // 20+: Kartlar yavaşça hareket eder
+                movingCards = true;
+                if (level >= 25) {
+                    // 25+: Hayalet mod - açık kartlar 2sn sonra tekrar kapanır
+                    ghostMode = true;
+                }
+            }
+            if (level >= 30) {
+                // 30+: Çoklu top atışı - her seferinde 2 top fırlar
+                multiShotMode = true;
+                if (level >= 35) {
+                    // 35+: Kartlar daha hızlı hareket eder
+                    speedCards = true;
+                }
+            }
+            if (level >= 40) {
+                // 40+: Her şey - tornado+kara delik+hareketli kart+çoklu top
+            }
+
+            // Bildirim göster
+            if (level === 20) showSurpriseNotif('⚠️ KARTLAR HAREKET EDİYOR!', '#ffcc00');
+            if (level === 25) showSurpriseNotif('👻 HAYALET MOD! Kartlar kapanıyor!', '#aa00ff');
+            if (level === 30) showSurpriseNotif('🔥 ÇİFT TOP MODU!', '#ff3366');
+            if (level === 35) showSurpriseNotif('💨 SÜPER HIZ MODU!', '#00ffff');
+            if (level === 40) showSurpriseNotif('💀 KAOS MODU! Her şey aktif!', '#ff0000');
+        }
+
+        function showSurpriseNotif(msg, color) {
+            let el = document.createElement('div');
+            el.style.cssText = `position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
+                background:rgba(0,0,0,0.9);border:3px solid ${color};color:${color};
+                font-size:22px;font-weight:900;padding:18px 32px;z-index:50;
+                text-align:center;letter-spacing:2px;pointer-events:none;
+                animation:surpriseAnim 3s forwards;white-space:nowrap;`;
+            el.textContent = msg;
+            document.getElementById('game-wrapper').appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        // Hareketli kart sistemi
+        function updateMovingCards() {
+            if (!movingCards || gameState !== 'playing' || isPaused) return;
+            let speed = speedCards ? 0.6 : 0.3;
+            cards.forEach(c => {
+                if (c.matched || !c.alive) return;
+                if (!c.mvx) {
+                    c.mvx = (Math.random()-0.5) * speed;
+                    c.mvy = (Math.random()-0.5) * speed;
+                }
+                c.x += c.mvx; c.y += c.mvy;
+                let half = c.size/2 + 5;
+                if (c.x < WALL.left+half)  { c.x = WALL.left+half;  c.mvx *= -1; }
+                if (c.x > WALL.right-half) { c.x = WALL.right-half; c.mvx *= -1; }
+                if (c.y < WALL.top+half)   { c.y = WALL.top+half;   c.mvy *= -1; }
+                if (c.y > WALL.bottom-half){ c.y = WALL.bottom-half; c.mvy *= -1; }
+            });
+        }
+
+        // Hayalet mod - açık kartları geri kapat
+        function initGhostMode() {
+            if (!ghostMode) return;
+            cards.forEach(c => {
+                if (c.revealed && !c.matched) {
+                    if (!c._ghostTimer) c._ghostTimer = 120; // 2sn
+                }
+            });
+        }
+
+        function updateGhostCards() {
+            if (!ghostMode) return;
+            cards.forEach(c => {
+                if (c.revealed && !c.matched && c._ghostTimer !== undefined) {
+                    c._ghostTimer--;
+                    if (c._ghostTimer <= 0) {
+                        c.revealed = false;
+                        c._ghostTimer = undefined;
+                        if (c === firstHitCard) firstHitCard = null;
+                    }
+                }
+            });
+        }
 
         // ===== LEVEL ARKAPLAN SİSTEMİ =====
         let bgParticles = [];
@@ -2600,7 +3036,7 @@
                 // 1x-3x: 0, 3x-10x: 0->1
                 let s = this.speedMult;
                 if (s <= 3) return 0;
-                return Math.min(1, (s - 3) / 7);
+                return Math.min(1, (s - 3) / 9);
             }
 
             getBallColor(ratio) {
@@ -2650,7 +3086,7 @@
                 }
 
                 // 10x+ sonrası duvardan duvara: kaybolsun
-                if (this.speedMult >= 10 && bounced) {
+                if (this.speedMult >= 12 && bounced) {
                     this.wallBouncesSinceCard++;
                     if (this.wallBouncesSinceCard >= 2) {
                         this.destroy();
@@ -2666,9 +3102,9 @@
             _onWallBounce() {
                 this.bounces++;
                 // Hızlandır
-                this.speedMult *= 1.2;
+                this.speedMult *= 1.1;
                 let speed = Math.hypot(this.vx, this.vy);
-                let newSpeed = speed * 1.2;
+                let newSpeed = speed * 1.1;
                 if (speed > 0) {
                     this.vx = (this.vx / speed) * newSpeed;
                     this.vy = (this.vy / speed) * newSpeed;
@@ -2828,8 +3264,10 @@
 
         function initLevel(level) {
             cards = []; projectiles = []; fxParticles = []; fruitParticles = [];
-            window._fadingForGameOver = false;
+            window._fadingForGameOver = false; _pendingBonusBalls = 0;
             initBgTheme(level, W, H);
+            initHazards(level, W, H);
+            applyLevelSurprises(level);
             canShoot = true; levelCleared = false;
             firstHitCard = null; matchedPairs = 0;
             currentCombo = 1; shotsFired = 0;
@@ -2926,7 +3364,24 @@
                 for (let c of cards) {
                     if (!c.alive || c.matched) continue;
 
+                    // Sweep test: topun bu frame'deki yolu boyunca çarpışma kontrol et
+                    let hit = false;
                     if (c.checkHit(p.x, p.y)) {
+                        hit = true;
+                    } else {
+                        // Hız büyükse ara noktaları da kontrol et
+                        let speed = Math.hypot(p.vx, p.vy);
+                        if (speed > 6) {
+                            let steps = Math.ceil(speed / 5);
+                            for (let s = 1; s <= steps; s++) {
+                                let ix = p.x - p.vx * (s / steps);
+                                let iy = p.y - p.vy * (s / steps);
+                                if (c.checkHit(ix, iy)) { hit = true; break; }
+                            }
+                        }
+                    }
+
+                    if (hit) {
                         p.hitCard(); // wallBouncesSinceCard sıfırla
                         p.destroy();
 
@@ -3048,15 +3503,15 @@
                 });
             }
 
-            // Top 2 kalınca müziği fade etmeye başla
-            if (ballsLeft === 2 && matchedPairs < totalPairs && !levelCleared && gameState === 'playing' && !window._fadingForGameOver) {
+            // Top 2 kalınca müziği fade etmeye başla (ama son 2sn içinde bonus geldiyse iptal)
+            if (ballsLeft <= 1 && matchedPairs < totalPairs && !levelCleared && gameState === 'playing' && !window._fadingForGameOver && _pendingBonusBalls === 0 && projectiles.length <= 1) {
                 window._fadingForGameOver = true;
                 fadeOutAllMusic(1500);
             }
-            if (ballsLeft > 2) window._fadingForGameOver = false;
+            if (ballsLeft > 1 || _pendingBonusBalls > 0) { window._fadingForGameOver = false; }
 
-            // Game over kontrolu - top 0 olunca VE havada top kalmayinca
-            if (ballsLeft <= 0 && matchedPairs < totalPairs && !levelCleared && gameState === 'playing' && revealTimer <= 0 && totalPairs > 0 && projectiles.length === 0) {
+            // Game over kontrolu - top 0 olunca VE havada top kalmayinca VE son bonus üzerinden 1sn geçince
+            if (ballsLeft <= 0 && matchedPairs < totalPairs && !levelCleared && gameState === 'playing' && revealTimer <= 0 && totalPairs > 0 && projectiles.length === 0 && _pendingBonusBalls === 0) {
                 levelCleared = true;
                 playGameOverSound();
                 // Skoru kaydet, sonra game over ekranı göster
@@ -3169,6 +3624,10 @@
                 cards.filter(c => !c.revealed && c.alive).forEach(c => { c.update(); c.draw(); });
                 cards.filter(c => c.revealed && c.alive).forEach(c => { c.update(); c.draw(); });
 
+                updateMovingCards();
+                updateGhostCards();
+                updateHazards();
+                drawHazards();
                 projectiles.forEach(p => { p.update(); p.draw(); });
                 projectiles = projectiles.filter(p => p.active);
 
@@ -3180,7 +3639,7 @@
                 drawSlingshot();
                 updateHUD();
             } else if (gameState === 'playing' && isPaused) {
-                // Pause modunda kartları ve sahneyi statik çiz
+                drawHazards();
                 cards.filter(c => !c.revealed && c.alive).forEach(c => c.draw());
                 cards.filter(c => c.revealed && c.alive).forEach(c => c.draw());
                 drawSlingshot();
@@ -3988,7 +4447,10 @@
         window.addEventListener('resize', resizeFly);
         resizeFly();
 
+        let _pendingBonusBalls = 0; // havada uçan bonus top sayısı
+
         function flyBallsToHUD(fromX, fromY, count) {
+            _pendingBonusBalls += count;
             const ballsEl = document.getElementById('balls');
             const rect = ballsEl.getBoundingClientRect();
             const targetX = rect.left + rect.width / 2;
@@ -4060,6 +4522,7 @@
                 if (b.t >= 1 && !b.landed) {
                     b.landed = true;
                     ballsLeft++;
+                    _pendingBonusBalls = Math.max(0, _pendingBonusBalls - 1);
                     updateHUD();
                     playTone(900 + flyBalls.indexOf(b) * 40, 'sine', 0.12, 0.08);
                     // HUD flaş
@@ -4768,12 +5231,12 @@
         function getLevelMusicEl(level) {
             const map = {
                 1: 'bgMusicEl',
-                2: 'level2MusicEl',
-                3: 'level3MusicEl',
+                2: 'level7MusicEl',   // level2 ↔ level7 swap
+                3: 'level6MusicEl',   // level3 ↔ level6 swap
                 4: 'level4MusicEl',
                 5: 'level5MusicEl',
-                6: 'level6MusicEl',
-                7: 'level7MusicEl',
+                6: 'level3MusicEl',   // level6 ↔ level3 swap
+                7: 'level2MusicEl',   // level7 ↔ level2 swap
             };
             if (map[level]) return document.getElementById(map[level]);
             // 7+ için random ama aynı parça üst üste gelmesin
@@ -4939,7 +5402,7 @@
             stopBgMusic();
             gameState = 'menu';
             startMenuMusic();
-            window._fadingForGameOver = false;
+            window._fadingForGameOver = false; _pendingBonusBalls = 0;
             // Welcome ekranı tekrar göster
             const ws = document.getElementById('welcome-screen');
             ws.style.display = 'flex';
