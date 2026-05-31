@@ -4718,11 +4718,11 @@
 
         function endDemoToGame() {
             demoRunning = false;
-            if (demoAnimId) cancelAnimationFrame(demoAnimId);
+            if (demoAnimId) { cancelAnimationFrame(demoAnimId); demoAnimId = null; }
             document.getElementById('demo-screen').style.display='none';
             if (demoNoShow) { try { localStorage.setItem(DEMO_KEY,'1'); } catch(e){} }
-            if (demoD && demoD._afterDemo) demoD._afterDemo();
-            else overlay.classList.remove('hidden');
+            // Her zaman overlay'i aç
+            overlay.classList.remove('hidden');
         }
 
         // Starfield animation
