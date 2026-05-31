@@ -5589,24 +5589,8 @@
             requestAnimationFrame(demoLoop);
         }
 
-        function skipDemo() {
-            endDemo();
-        }
-
-        function endDemo() {
-            demoRunning = false;
-            if (demoAnimId) cancelAnimationFrame(demoAnimId);
-            document.getElementById('demo-screen').style.display = 'none';
-            if (demoNoShow) {
-                try { localStorage.setItem(DEMO_KEY, '1'); } catch(e) {}
-            }
-            // Welcome screen göster
-            const ws = document.getElementById('welcome-screen');
-            ws.style.display = 'flex';
-            ws.style.opacity = '0';
-            ws.style.transition = 'opacity 0.6s';
-            setTimeout(() => { ws.style.opacity = '1'; }, 50);
-        }
+        function skipDemo() { endDemoToGame(); }
+        function endDemo() { endDemoToGame(); }
 
         function updateDots(phase) {
             for (let i = 0; i < 5; i++) {
