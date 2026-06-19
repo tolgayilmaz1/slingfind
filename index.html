@@ -436,6 +436,21 @@
         }
         .hmp-mute-btn:hover { border-color: #00e5ff; color: #00e5ff; }
 
+
+
+        /* HINT BUTONU */
+        #hint-btn {
+            position: absolute; right: 54px; top: 2px;
+            background: rgba(255,204,0,0.12); border: 1.5px solid #ffcc00;
+            color: #ffcc00; font-size: 10px; font-weight: 900;
+            padding: 2px 6px; cursor: pointer; font-family: inherit;
+            letter-spacing: 1px; white-space: nowrap;
+            transition: all 0.15s; border-radius: 2px;
+            display: flex; align-items: center; gap: 3px; z-index: 11;
+        }
+        #hint-btn:hover { background: rgba(255,204,0,0.22); box-shadow: 0 0 8px #ffcc00; }
+        #hint-btn.disabled { border-color: #555; color: #555; background: transparent; cursor: not-allowed; }
+
         /* ===== ADMIN PANEL ===== */
         #admin-modal {
             position: absolute; inset: 0; z-index: 60;
@@ -1205,6 +1220,7 @@
         <div class="hud-item"><div class="hud-label">PUAN</div><div class="hud-value" id="score">0</div></div>
         <div class="hud-item"><div class="hud-label">COMBO</div><div class="hud-value" id="combo" style="color:#ffcc00">1x</div></div>
         <div class="hud-item"><div class="hud-label">TOPLAR</div><div class="hud-value" id="balls" style="color:#00e5ff">6</div></div>
+        <button id="hint-btn" onclick="useHint()">💡 <span id="hint-count">3</span></button>
         <button id="hud-music-btn" onclick="toggleMusicPopup(event)">🎵 <span id="hud-music-icon">♪</span></button>
     </div>
     <!-- Müzik popup -->
@@ -1228,16 +1244,44 @@
                 <span class="menu-label" id="pause-label">DURAKLAT</span>
             </button>
 
-            <!-- SES -->
+            <!-- ANA SES -->
             <div class="menu-item menu-item-vol">
                 <span class="menu-icon">🔊</span>
-                <span class="menu-label" id="sound-label">SES</span>
+                <span class="menu-label" id="sound-label">ANA SES</span>
                 <div class="vol-slider-wrap">
                     <input type="range" id="vol-slider" min="0" max="100" value="15"
                            oninput="setVolume(this.value)" class="vol-slider"/>
                     <span class="vol-val" id="vol-val">15</span>
                 </div>
             </div>
+
+            <!-- EFEKT SESI -->
+            <div class="menu-item menu-item-vol">
+                <span class="menu-icon">💥</span>
+                <span class="menu-label" id="menu-sfx-label">EFEKT</span>
+                <div class="vol-slider-wrap">
+                    <input type="range" id="sfx-vol-slider" min="0" max="100" value="100"
+                           oninput="setMenuSfxVolume(this.value)" class="vol-slider"/>
+                    <span class="vol-val" id="sfx-vol-val">100</span>
+                </div>
+            </div>
+
+            <!-- MUZIK SESI -->
+            <div class="menu-item menu-item-vol">
+                <span class="menu-icon">🎵</span>
+                <span class="menu-label" id="menu-music-label">MÜZİK</span>
+                <div class="vol-slider-wrap">
+                    <input type="range" id="music-vol-slider" min="0" max="100" value="30"
+                           oninput="setMenuMusicVolume(this.value)" class="vol-slider"/>
+                    <span class="vol-val" id="music-vol-val">30</span>
+                </div>
+            </div>
+
+            <!-- MUZIK AÇ/KAPAT -->
+            <button class="menu-item" id="menu-music-toggle-btn" onclick="toggleMenuMusic()">
+                <span class="menu-icon" id="menu-music-icon">🎵</span>
+                <span class="menu-label" id="menu-music-toggle-label">MÜZİĞİ KAPAT</span>
+            </button>
 
             <!-- SESSIZ -->
             <button class="menu-item" id="menu-mute-btn" onclick="toggleMute()">
@@ -1305,6 +1349,13 @@
     <audio id="level5MusicEl" src="music/level5.mp3" loop preload="auto"></audio>
     <audio id="level6MusicEl" src="music/level6.mp3" loop preload="auto"></audio>
     <audio id="level7MusicEl" src="music/level7.mp3" loop preload="auto"></audio>
+    <audio id="ballHitEl" src="music/ballhit.ogg" preload="auto"></audio>
+    <audio id="lastHitEl" src="music/lasthit.ogg" preload="auto"></audio>
+    <audio id="win1El" src="music/win1.ogg" preload="auto"></audio>
+    <audio id="win2El" src="music/win2.ogg" preload="auto"></audio>
+    <audio id="win3El" src="music/win3.ogg" preload="auto"></audio>
+    <audio id="win4El" src="music/win4.ogg" preload="auto"></audio>
+    <audio id="win5El" src="music/win5.ogg" preload="auto"></audio>
     <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -1753,6 +1804,11 @@
         let ballsLeft = 6; // Level 1 default: 4 kart * 1.5 = 6
         let totalBalls = 6;
         let shotsFired = 0; // Kac top atildi (hiz bonusu icin)
+        let hintsLeft = 3; // Oyuncunun toplam ipucu hakki
+        let rescueHintActiveUntil = 0;
+        let rescueHintCard = null;
+        let slowMoFrames = 0;
+        let lastWinMusicIdx = -1;
 
         const GRAVITY = 0.0;
         const BOUNCE_DAMPING = 0.92;
@@ -1798,6 +1854,123 @@
 
 
 
+
+
+
+        function updateHintHUD() {
+            const cnt = document.getElementById('hint-count');
+            const btn = document.getElementById('hint-btn');
+            if (cnt) cnt.textContent = hintsLeft;
+            if (btn) btn.classList.toggle('disabled', hintsLeft <= 0);
+        }
+
+        function findPairCard(card) {
+            if (!card) return null;
+            return cards.find(c => c !== card && c.alive && !c.matched && c.pairId === card.pairId) || null;
+        }
+
+        function isLineBlockedByOtherCards(fromX, fromY, target, ignoreA, ignoreB) {
+            if (!target) return false;
+            const dx = target.x - fromX, dy = target.y - fromY;
+            const dist = Math.hypot(dx, dy) || 1;
+            const steps = Math.max(10, Math.ceil(dist / 12));
+            for (let i = 1; i < steps; i++) {
+                const x = fromX + dx * (i / steps);
+                const y = fromY + dy * (i / steps);
+                for (const c of cards) {
+                    if (!c.alive || c.matched || c === ignoreA || c === ignoreB) continue;
+                    const pad = Math.max(8, c.size * 0.10);
+                    if (x > c.x - c.size/2 - pad && x < c.x + c.size/2 + pad &&
+                        y > c.y - c.size/2 - pad && y < c.y + c.size/2 + pad) return true;
+                }
+            }
+            return false;
+        }
+
+        function activateRescueHint(card, reason='rescue') {
+            if (!card || card.matched || !card.alive) return;
+            rescueHintCard = card;
+            rescueHintActiveUntil = performance.now() + 9000;
+            card._hintPulseUntil = rescueHintActiveUntil;
+            card._rescueHitboxUntil = rescueHintActiveUntil;
+            showTicker(reason === 'manual' ? '💡 EŞ KART İŞARETLENDİ!' : '💡 RESCUE HINT: EŞ KART YARDIMI AÇILDI!');
+        }
+
+        function maybeActivateRescueHint(openedCard) {
+            const pair = findPairCard(openedCard);
+            if (!pair) return;
+            // Direkt çizgi başka kartlarla kesiliyorsa veya eş kart duvar/merkez sıkışıklığına çok yakınsa rescue aç.
+            const blocked = isLineBlockedByOtherCards(slingshot.x, slingshot.y, pair, openedCard, pair);
+            const nearEdge = pair.x > WALL.right - pair.size * 0.8 || pair.y < WALL.top + pair.size * 0.8 || pair.y > WALL.bottom - pair.size * 0.8;
+            if (blocked || nearEdge) activateRescueHint(pair, 'rescue');
+        }
+
+        function useHint() {
+            if (gameState !== 'playing' || levelCleared || isPaused) return;
+            if (hintsLeft <= 0) { showTicker('💡 HINT BİTTİ!'); updateHintHUD(); return; }
+            if (!firstHitCard || firstHitCard.matched) { showTicker('ÖNCE BİR KART AÇ!'); return; }
+            const pair = findPairCard(firstHitCard);
+            if (!pair) { showTicker('EŞ KART BULUNAMADI'); return; }
+            hintsLeft--;
+            activateRescueHint(pair, 'manual');
+            updateHintHUD();
+        }
+
+        function playFileSfx(id, volume=1.0) {
+            try {
+                if (!sfxEnabled) return false;
+                const a = document.getElementById(id);
+                if (!a) return false;
+                a.pause();
+                a.currentTime = 0;
+                a.volume = Math.max(0, Math.min(1, masterVolume * sfxVolume * volume));
+                a.play().catch(() => {});
+                return true;
+            } catch(e) { return false; }
+        }
+
+        function playBallHitFile(isLast=false) {
+            if (isLast) return playFileSfx('lastHitEl', 1.0);
+            return playFileSfx('ballHitEl', 0.85);
+        }
+
+        function triggerLastShotImpact(x, y) {
+            slowMoFrames = Math.max(slowMoFrames, 28);
+            let el = document.createElement('div');
+            el.style.cssText = `position:absolute;left:${x}px;top:${y}px;transform:translate(-50%,-50%);
+                z-index:55;pointer-events:none;font-family:'Courier New',monospace;
+                font-size:clamp(18px,5vw,34px);font-weight:900;color:#ffcc00;
+                text-shadow:0 0 20px #ffcc00,0 0 40px #ff3366,3px 3px 0 #000;
+                animation:perfectAnim 0.7s forwards;`;
+            el.textContent = 'LAST HIT!';
+            const gw = document.getElementById('game-wrapper') || document.body;
+            gw.appendChild(el);
+            setTimeout(() => el.remove(), 750);
+        }
+
+        function startRandomWinMusic() {
+            if (!gameSettings.musicOn) return;
+            const ids = ['win1El','win2El','win3El','win4El','win5El'];
+            let idx;
+            do { idx = Math.floor(Math.random() * ids.length); }
+            while (idx === lastWinMusicIdx && ids.length > 1);
+            lastWinMusicIdx = idx;
+            const a = document.getElementById(ids[idx]);
+            if (!a) return;
+            stopBgMusic();
+            try {
+                a.pause(); a.currentTime = 0;
+                a.volume = (gameSettings.musicVol / 100) * 0.45;
+                a.play().catch(() => {});
+            } catch(e) {}
+        }
+
+        function stopWinMusic() {
+            ['win1El','win2El','win3El','win4El','win5El'].forEach(id => {
+                const a = document.getElementById(id);
+                if (a && !a.paused) fadeOutAudio(a, 500);
+            });
+        }
 
         // ===== TORNADO & KARA DELİK =====
         let hazards = []; // tornado ve kara delikler
@@ -1859,11 +2032,28 @@
             }
 
             checkBall(ball) {
-                if (this.capturedBall || this.captureTimer > 0) return;
+                // Hortum artik topu kilitlemez/tutmaz; sadece savurur.
+                // Boylece level 10'da ilk top hortuma girince oyun takiliyormus gibi olmaz.
                 let dist = Math.hypot(ball.x - this.x, ball.y - this.y);
-                if (dist < this.radius + ball.radius) {
-                    this.capturedBall = ball;
-                    this.captureTimer = 50; // ~0.8sn
+                if (dist < this.radius + ball.radius + 12) {
+                    const now = performance.now();
+                    if (ball._tornadoCooldownUntil && ball._tornadoCooldownUntil > now) return;
+                    ball._tornadoCooldownUntil = now + 350;
+                    let dx = ball.x - this.x, dy = ball.y - this.y;
+                    let len = Math.hypot(dx, dy) || 1;
+                    let nx = dx / len, ny = dy / len;
+                    // teğetsel savurma + hafif dış itiş
+                    let tx = -ny, ty = nx;
+                    let swirl = 3.5 + Math.random() * 2.5;
+                    ball.vx += tx * swirl + nx * 1.2;
+                    ball.vy += ty * swirl + ny * 1.2;
+                    // Asla asili kalmasin: minimum hiz garanti
+                    let sp = Math.hypot(ball.vx, ball.vy);
+                    if (sp < 4) {
+                        let a = Math.random() * Math.PI * 2;
+                        ball.vx = Math.cos(a) * 5;
+                        ball.vy = Math.sin(a) * 5;
+                    }
                     playTornadoSound();
                 }
             }
@@ -2054,17 +2244,19 @@
             let tornadoCount = level >= 15 ? 2 : 1;
             let blackholeCount = level >= 18 ? 2 : level >= 10 ? 1 : 0;
 
-            let safeZone = slingshot.x + 120; // Sapandan uzak
+            // Android dar ekranlarda negatif random alani level 9->10 crash sebebi olabiliyordu.
+            let safeZone = Math.min(WALL.right - 90, slingshot.x + 120); // Sapandan uzak ama ekran disina tasma yok
+            let minX = Math.max(WALL.left + 45, safeZone + 20);
+            let maxX = Math.max(minX + 1, WALL.right - 45);
+            let minY = WALL.top + 60;
+            let maxY = Math.max(minY + 1, WALL.bottom - 60);
+            const rand = (a, b) => a + Math.random() * Math.max(1, b - a);
 
             for (let i = 0; i < tornadoCount; i++) {
-                let x = safeZone + Math.random() * (WALL.right - safeZone - 60) + 30;
-                let y = WALL.top + 60 + Math.random() * (WALL.bottom - WALL.top - 120);
-                hazards.push(new Tornado(x, y));
+                hazards.push(new Tornado(rand(minX, maxX), rand(minY, maxY)));
             }
             for (let i = 0; i < blackholeCount; i++) {
-                let x = safeZone + Math.random() * (WALL.right - safeZone - 60) + 30;
-                let y = WALL.top + 60 + Math.random() * (WALL.bottom - WALL.top - 120);
-                hazards.push(new BlackHole(x, y));
+                hazards.push(new BlackHole(rand(minX, maxX), rand(minY, maxY)));
             }
         }
 
@@ -3251,21 +3443,47 @@
                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.fillText('?', 0, 0);
                 }
+
+                // Hint / rescue isareti: es karti parlat ve ok gibi hedef goster
+                if (this._hintPulseUntil && performance.now() < this._hintPulseUntil && !this.matched && this.alive) {
+                    const pulse = 0.55 + Math.sin(performance.now() / 90) * 0.35;
+                    ctx.save();
+                    ctx.globalAlpha = 0.65 + pulse * 0.35;
+                    ctx.strokeStyle = '#ffcc00';
+                    ctx.lineWidth = 5;
+                    ctx.shadowColor = '#ffcc00';
+                    ctx.shadowBlur = 24;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * (0.72 + pulse * 0.12), 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.fillStyle = '#ffcc00';
+                    ctx.font = `bold ${Math.max(16, this.size * 0.35)}px sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText('⬇', 0, -this.size * 0.88);
+                    ctx.restore();
+                }
                 ctx.restore();
             }
 
             checkHit(px, py) {
-                return px > this.x - this.size/2 && px < this.x + this.size/2 &&
-                       py > this.y - this.size/2 && py < this.y + this.size/2;
+                // Kartlar arasindaki minicik bosluklardan top kacmasin diye toleransli hitbox.
+                let pad = Math.max(7, this.size * 0.08);
+                if (this._rescueHitboxUntil && performance.now() < this._rescueHitboxUntil) {
+                    pad += Math.max(16, this.size * 0.30); // Rescue hint aktifken es kart daha affedici olur
+                }
+                return px > this.x - this.size/2 - pad && px < this.x + this.size/2 + pad &&
+                       py > this.y - this.size/2 - pad && py < this.y + this.size/2 + pad;
             }
         }
 
         class Ball {
-            constructor(x, y, vx, vy) {
-                this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+            constructor(x, y, vx, vy, isLastShot=false) {
+                this.x = x; this.y = y; this.prevX = x; this.prevY = y;
+                this.vx = vx; this.vy = vy;
                 this.radius = 9; this.active = true;
                 this.bounces = 0;
                 this.hitFirstCard = false;
+                this.isLastShot = isLastShot;
                 this.speedMult = 1.0; // Her duvara çarpınca 1.2x artar
                 this.totalWallBounces = 0; // toplam duvar sekme sayacı
             }
@@ -3303,7 +3521,9 @@
 
             update() {
                 if (!this.active) return;
-                this.x += this.vx; this.y += this.vy;
+                this.prevX = this.x; this.prevY = this.y;
+                const slowFactor = (slowMoFrames > 0 && this.isLastShot) ? 0.38 : 1;
+                this.x += this.vx * slowFactor; this.y += this.vy * slowFactor;
                 let bounced = false;
 
                 if (this.x + this.radius > WALL.right) {
@@ -3505,15 +3725,17 @@
 
         function initLevel(level) {
             cards = []; projectiles = []; fxParticles = []; fruitParticles = []; burnParticles = [];
+            rescueHintCard = null; rescueHintActiveUntil = 0; slowMoFrames = 0;
             perfectLevel = true;
             window._fadingForGameOver = false; _pendingBonusBalls = 0;
-            initBgTheme(level, W, H);
-            initHazards(level, W, H);
-            applyLevelSurprises(level);
+            try { initBgTheme(level, W, H); } catch(e) { console.warn('initBgTheme failed', e); }
+            try { initHazards(level, W, H); } catch(e) { console.warn('initHazards failed', e); hazards = []; }
+            try { applyLevelSurprises(level); } catch(e) { console.warn('surprise failed', e); }
             canShoot = true; levelCleared = false;
             firstHitCard = null; matchedPairs = 0;
             currentCombo = 1; shotsFired = 0;
             updateComboDisplay();
+            updateHintHUD();
             winPopup.classList.remove('show');
 
             let layout = getLayoutForLevel(level);
@@ -3606,35 +3828,33 @@
                 for (let c of cards) {
                     if (!c.alive || c.matched) continue;
 
-                    // Sweep test: topun bu frame'deki yolu boyunca çarpışma kontrol et
+                    // Sweep test: topun onceki ve simdiki konumu arasinda cizgi kontrolu.
+                    // Boylece iki kart arasi minik bosluklardan/hizdan dolayi kacma azalir.
                     let hit = false;
-                    if (c.checkHit(p.x, p.y)) {
-                        hit = true;
-                    } else {
-                        // Hız büyükse ara noktaları da kontrol et
-                        let speed = Math.hypot(p.vx, p.vy);
-                        if (speed > 6) {
-                            let steps = Math.ceil(speed / 5);
-                            for (let s = 1; s <= steps; s++) {
-                                let ix = p.x - p.vx * (s / steps);
-                                let iy = p.y - p.vy * (s / steps);
-                                if (c.checkHit(ix, iy)) { hit = true; break; }
-                            }
-                        }
+                    let speed = Math.hypot(p.x - (p.prevX ?? p.x), p.y - (p.prevY ?? p.y));
+                    let steps = Math.max(1, Math.ceil(speed / 4));
+                    for (let s = 0; s <= steps; s++) {
+                        let tStep = s / steps;
+                        let ix = (p.prevX ?? p.x) + (p.x - (p.prevX ?? p.x)) * tStep;
+                        let iy = (p.prevY ?? p.y) + (p.y - (p.prevY ?? p.y)) * tStep;
+                        if (c.checkHit(ix, iy)) { hit = true; break; }
                     }
 
                     if (hit) {
                         p.hitCard(); // duvar sayacı sıfırla
+                        p._hitCard = true;
+                        if (!playBallHitFile(!!p.isLastShot)) playCardHitSound();
+                        if (p.isLastShot) triggerLastShotImpact(p.x, p.y);
                         p.destroy();
 
                         if (!c.revealed) {
                             c.reveal();
-                            playCardHitSound();
                             playCardFlipSound();
 
                             if (firstHitCard === null) {
                                 firstHitCard = c;
                                 firstHitCardFireRatio = p.getFireRatio ? p.getFireRatio() : 0;
+                                maybeActivateRescueHint(c);
                                 showTicker(t('cardOpen', c.icon));
                             } else if (firstHitCard === c) {
                                 showTicker(t('alreadyOpen'));
@@ -3898,7 +4118,9 @@
                 updateGhostCards();
                 updateHazards();
                 drawHazards();
-                projectiles.forEach(p => { p.update(); p.draw(); });
+                if (slowMoFrames > 0) slowMoFrames--;
+                const slowSkip = slowMoFrames > 0 && (slowMoFrames % 2 === 0);
+                projectiles.forEach(p => { if (!slowSkip) p.update(); p.draw(); });
                 projectiles = projectiles.filter(p => p.active);
 
                 fxParticles.forEach((f, i) => { f.update(); f.draw(); if(f.alpha <= 0) fxParticles.splice(i, 1); });
@@ -3969,7 +4191,8 @@
                 let vy = Math.sin(angle) * velocity;
 
                 if (ballsLeft > 0 && revealTimer <= 0) {
-                    projectiles.push(new Ball(slingshot.x, slingshot.y - 13, vx, vy));
+                    const isLastShot = (ballsLeft === 1);
+                    projectiles.push(new Ball(slingshot.x, slingshot.y - 13, vx, vy, isLastShot));
                     ballsLeft--;
                     shotsFired++;
                     canShoot = false;
@@ -4491,6 +4714,7 @@
             document.getElementById('pause-overlay').classList.remove('show');
             winPopup.style.color = '#ffcc00';
             currentLevel = 1; totalScore = 0;
+            hintsLeft = 3; updateHintHUD();
             initLevel(currentLevel);
         }
 
@@ -4983,11 +5207,12 @@
             ballsEl.innerHTML = '';
             totalEl.textContent = '';
             overlay.classList.add('show');
+            startRandomWinMusic();
 
             if (remainingBalls === 0) {
                 totalEl.style.color = '#888';
                 totalEl.textContent = t('bonusNone');
-                setTimeout(() => { overlay.classList.remove('show'); onDone(); }, 1800);
+                setTimeout(() => { stopWinMusic(); overlay.classList.remove('show'); onDone(); }, 1800);
                 return;
             }
 
@@ -5057,6 +5282,7 @@
                     playLevelClearSound();
                     setTimeout(() => {
                         stopConfetti();
+                        stopWinMusic();
                         overlay.classList.remove('show');
                         onDone();
                     }, 1800);
@@ -5193,7 +5419,7 @@
         }
 
         function fadeOutAllMusic(duration=800, cb) {
-            const ids = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'];
+            const ids = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','win1El','win2El','win3El','win4El','win5El'];
             const playing = ids.map(id => document.getElementById(id)).filter(a => a && !a.paused);
             if (playing.length === 0) { if(cb) cb(); return; }
             let done = 0;
@@ -5225,7 +5451,7 @@
             updateHmpSliderGrad(val);
             gameSettings.musicVol = val;
             const v = (val / 100) * 0.35;
-            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'].forEach(id => {
+            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','win1El','win2El','win3El','win4El','win5El'].forEach(id => {
                 const a = document.getElementById(id); if(a) a.volume = v;
             });
             // Settings slider ile de senkronize et
@@ -5243,7 +5469,7 @@
 
         function toggleHmpMute() {
             hudMusicMuted = !hudMusicMuted;
-            const allIds = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'];
+            const allIds = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','win1El','win2El','win3El','win4El','win5El'];
             if (hudMusicMuted) {
                 // Fade out
                 allIds.forEach(id => {
@@ -5287,6 +5513,52 @@
                 hudMusicPopupOpen = false;
             }
         });
+
+
+
+        function setMenuSfxVolume(val) {
+            onSettingSfxVol(val);
+            const s = document.getElementById('sfx-vol-slider');
+            const v = document.getElementById('sfx-vol-val');
+            if (s) s.style.setProperty('--val', val + '%');
+            if (v) v.textContent = val;
+        }
+
+        function setMenuMusicVolume(val) {
+            onSettingMusicVol(val);
+            onHmpSlider(val);
+            const s = document.getElementById('music-vol-slider');
+            const v = document.getElementById('music-vol-val');
+            if (s) s.style.setProperty('--val', val + '%');
+            if (v) v.textContent = val;
+            if (parseInt(val) > 0 && !gameSettings.musicOn) toggleMenuMusic();
+        }
+
+        function toggleMenuMusic() {
+            gameSettings.musicOn = !gameSettings.musicOn;
+            hudMusicMuted = !gameSettings.musicOn;
+            saveSettings();
+            if (gameSettings.musicOn) {
+                if (gameState === 'playing') startBgMusic(); else startMenuMusic();
+            } else {
+                stopBgMusic(); stopMenuMusic(); stopWinMusic();
+            }
+            updateHudMusicBtn();
+            updateMenuLabels();
+        }
+
+        function syncInGameAudioControls() {
+            const sfxVal = gameSettings.sfxVol ?? 100;
+            const musVal = gameSettings.musicVol ?? 30;
+            const sfxS = document.getElementById('sfx-vol-slider');
+            const sfxV = document.getElementById('sfx-vol-val');
+            if (sfxS) { sfxS.value = sfxVal; sfxS.style.setProperty('--val', sfxVal + '%'); }
+            if (sfxV) sfxV.textContent = sfxVal;
+            const musS = document.getElementById('music-vol-slider');
+            const musV = document.getElementById('music-vol-val');
+            if (musS) { musS.value = musVal; musS.style.setProperty('--val', musVal + '%'); }
+            if (musV) musV.textContent = musVal;
+        }
 
         // ===== ADMIN =====
         const ADMIN_PASS = 'Kalem123!';
@@ -6048,6 +6320,9 @@
             const musVV = document.getElementById('st-music-vol-val');
             if(musVV) musVV.textContent = gameSettings.musicVol;
             updateBgMusic();
+            syncInGameAudioControls();
+            hudMusicMuted = !gameSettings.musicOn || gameSettings.musicVol <= 0;
+            updateHudMusicBtn();
 
             // Trajectory
             trajectoryEnabled = gameSettings.trajectoryOn;
@@ -6120,7 +6395,7 @@
             document.getElementById('st-music-vol-val').textContent = val;
             updateSliderGradient(document.getElementById('st-music-vol'), '#00ffff');
             const v = (val / 100) * 0.35;
-            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'].forEach(id => {
+            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','win1El','win2El','win3El','win4El','win5El'].forEach(id => {
                 const a = document.getElementById(id);
                 if(a) a.volume = v;
             });
@@ -6238,6 +6513,7 @@
             isPaused = false;
             document.getElementById('pause-overlay').classList.remove('show');
             currentLevel = 1; totalScore = 0;
+            hintsLeft = 3; updateHintHUD();
             initLevel(currentLevel);
         }
 
@@ -6278,6 +6554,15 @@
             document.getElementById('menu-home-label').textContent = t('menuHome');
             const msl = document.getElementById('menu-settings-label');
             if(msl) msl.textContent = t('menuSettings');
+            const msfx = document.getElementById('menu-sfx-label');
+            if(msfx) msfx.textContent = currentLang === 'tr' ? 'EFEKT' : 'SFX';
+            const mmus = document.getElementById('menu-music-label');
+            if(mmus) mmus.textContent = currentLang === 'tr' ? 'MÜZİK' : 'MUSIC';
+            const mtog = document.getElementById('menu-music-toggle-label');
+            if(mtog) mtog.textContent = gameSettings.musicOn ? (currentLang === 'tr' ? 'MÜZİĞİ KAPAT' : 'MUSIC OFF') : (currentLang === 'tr' ? 'MÜZİĞİ AÇ' : 'MUSIC ON');
+            const mi = document.getElementById('menu-music-icon');
+            if(mi) mi.textContent = gameSettings.musicOn ? '🎵' : '🔇';
+            syncInGameAudioControls();
         }
 
         function togglePause() {
@@ -6303,6 +6588,8 @@
             // Slider gradient güncellemesi
             const slider = document.getElementById('vol-slider');
             slider.style.background = `linear-gradient(to right, #ffcc00 ${val}%, #333 ${val}%)`;
+            gameSettings.masterVol = val;
+            saveSettings();
             if (isMuted && val > 0) { isMuted = false; updateMenuLabels(); }
         }
 
