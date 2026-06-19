@@ -438,18 +438,97 @@
 
 
 
-        /* HINT BUTONU */
-        #hint-btn {
-            position: absolute; right: 54px; top: 2px;
-            background: rgba(255,204,0,0.12); border: 1.5px solid #ffcc00;
-            color: #ffcc00; font-size: 10px; font-weight: 900;
-            padding: 2px 6px; cursor: pointer; font-family: inherit;
-            letter-spacing: 1px; white-space: nowrap;
-            transition: all 0.15s; border-radius: 2px;
-            display: flex; align-items: center; gap: 3px; z-index: 11;
+        /* HINT BUTONU - daha dikkat cekici */
+        @keyframes hintGlowPulse {
+            0%,100% { transform: scale(1); box-shadow: 0 0 10px rgba(255,204,0,0.45), 0 0 22px rgba(255,51,102,0.20); }
+            50% { transform: scale(1.08); box-shadow: 0 0 18px rgba(255,204,0,0.95), 0 0 34px rgba(255,51,102,0.42); }
         }
-        #hint-btn:hover { background: rgba(255,204,0,0.22); box-shadow: 0 0 8px #ffcc00; }
-        #hint-btn.disabled { border-color: #555; color: #555; background: transparent; cursor: not-allowed; }
+        #hint-btn {
+            position: absolute; right: 58px; top: 4px;
+            background: linear-gradient(135deg, #ffcc00, #ff3366);
+            border: 2px solid #fff;
+            color: #000; font-size: 12px; font-weight: 900;
+            padding: 4px 9px; cursor: pointer; font-family: inherit;
+            letter-spacing: 1px; white-space: nowrap;
+            transition: all 0.15s; border-radius: 999px;
+            display: flex; align-items: center; gap: 4px; z-index: 12;
+            text-shadow: 0 1px rgba(255,255,255,0.35);
+            animation: hintGlowPulse 1.35s ease-in-out infinite;
+        }
+        #hint-btn .hint-bulb { font-size: 17px; filter: drop-shadow(0 0 5px #fff); }
+        #hint-btn .hint-label { font-size: 10px; letter-spacing: 1px; }
+        #hint-btn:hover { transform: scale(1.08); box-shadow: 0 0 22px #ffcc00; }
+        #hint-btn.disabled {
+            border-color: #555; color: #777; background: rgba(40,40,40,0.7);
+            cursor: not-allowed; animation: none; box-shadow: none; text-shadow: none;
+        }
+        @keyframes hintTeachRing {
+            0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,204,0,0.95), 0 0 24px #ffcc00; }
+            50% { transform: scale(1.16); box-shadow: 0 0 0 12px rgba(255,204,0,0.0), 0 0 42px #ff3366; }
+        }
+        #hint-btn.teach-free-hint {
+            animation: hintTeachRing 0.55s ease-in-out 5, hintGlowPulse 1.35s ease-in-out infinite;
+            outline: 3px solid rgba(255,255,255,0.85);
+        }
+
+        /* HINT ogretici hayalet ikonu */
+        @keyframes freeHintVapor {
+            0%   { opacity: 0; transform: translate(0, 0) scale(0.65); filter: blur(0); }
+            14%  { opacity: 0.95; transform: translate(-8px, 6px) scale(1.08); filter: blur(0); }
+            62%  { opacity: 0.75; transform: translate(-24px, -8px) scale(1.0); filter: blur(0.5px); }
+            100% { opacity: 0; transform: translate(-48px, -34px) scale(1.55); filter: blur(6px); }
+        }
+        .free-hint-ghost {
+            position: absolute; z-index: 80; pointer-events: none;
+            font-family: 'Courier New', monospace; font-weight: 900;
+            color: #ffcc00; text-shadow: 0 0 16px #ffcc00, 0 0 28px #ff3366;
+            animation: freeHintVapor 2.35s ease-out forwards;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .free-hint-ghost .ghost-bulb { font-size: 24px; }
+        .free-hint-ghost .ghost-text { font-size: 10px; letter-spacing: 1px; }
+
+        @keyframes freeHintPointerIn {
+            0% { opacity: 0; transform: translate(-10px, 8px) scale(0.85); }
+            15% { opacity: 1; transform: translate(0, 0) scale(1.04); }
+            75% { opacity: 1; transform: translate(0, 0) scale(1); }
+            100% { opacity: 0; transform: translate(10px, -6px) scale(0.94); }
+        }
+        @keyframes freeHintArrowPulse {
+            0%,100% { filter: drop-shadow(0 0 6px #ffcc00); opacity: 0.85; }
+            50% { filter: drop-shadow(0 0 18px #ff3366); opacity: 1; }
+        }
+        .free-hint-pointer {
+            position: fixed; z-index: 120; pointer-events: none;
+            font-family: 'Courier New', monospace; font-weight: 900;
+            color: #fff; text-shadow: 0 0 10px #000, 0 0 18px #ffcc00;
+            animation: freeHintPointerIn 3.8s ease-out forwards;
+        }
+        .free-hint-pointer .fhp-box {
+            position: absolute; right: 70px; top: 24px;
+            min-width: 178px; padding: 8px 10px;
+            background: rgba(6,3,15,0.92); border: 2px solid #ffcc00;
+            box-shadow: 0 0 22px rgba(255,204,0,0.45);
+            color: #ffcc00; font-size: 11px; line-height: 1.25; letter-spacing: 1px;
+            border-radius: 8px; text-align: center;
+        }
+        .free-hint-pointer .fhp-line {
+            position: absolute; right: 24px; top: 34px;
+            width: 72px; height: 3px; background: #ffcc00;
+            transform-origin: right center; transform: rotate(-22deg);
+            box-shadow: 0 0 12px #ffcc00;
+            animation: freeHintArrowPulse 0.65s ease-in-out infinite;
+        }
+        .free-hint-pointer .fhp-line::after {
+            content: ''; position: absolute; right: -2px; top: -6px;
+            border-left: 12px solid #ffcc00;
+            border-top: 7px solid transparent; border-bottom: 7px solid transparent;
+        }
+
+        /* Top sayacini hint ikonundan biraz sola al */
+        #balls-hud { transform: translateX(-34px); }
+        @media (max-width: 420px) { #balls-hud { transform: translateX(-26px); } }
+
 
         /* ===== ADMIN PANEL ===== */
         #admin-modal {
@@ -1013,7 +1092,7 @@
 
             <!-- Buttons row -->
             <div class="ws-btn-row">
-                <button class="ws-start-btn" id="ws-start-btn" onclick="initAudio();playMenuClick('start');goToGameMenu()">BAŞLA!</button>
+                <button class="ws-start-btn" id="ws-start-btn" onclick="initAudio();playStartButtonSound();goToGameMenu()">BAŞLA!</button>
                 <button class="ws-hs-btn" id="ws-hs-btn" onclick="initAudio();playMenuClick('hs');showHiScores()">🏆 HI-SCORES</button>
                 <button class="ws-settings-btn" id="ws-settings-btn" onclick="initAudio();playMenuClick('settings');showSettings()">⚙ AYARLAR</button>
             </div>
@@ -1171,7 +1250,7 @@
     <!-- DEMO -->
     <div id="demo-screen">
         <canvas id="demo-canvas"></canvas>
-        <button id="demo-skip-btn" onclick="skipDemo()">SKIP ▶</button>
+        <button id="demo-skip-btn" onclick="skipDemo()">DEMOYU GEÇ ▶</button>
         <div id="demo-no-show-wrap">
             <input type="checkbox" id="demo-no-show-cb" onchange="onDemoNoShow(this.checked)"/>
             <label id="demo-no-show-label" for="demo-no-show-cb">Bir daha gösterme</label>
@@ -1199,7 +1278,7 @@
                 <div class="go-stat"><div class="go-stat-label">SIRALAMA</div><div class="go-stat-val" id="go-rank">-</div></div>
             </div>
             <div class="go-btn-row">
-                <button class="go-btn-play" onclick="playMenuClick('start');restartGame()">🔄 TEKRAR</button>
+                <button class="go-btn-play" onclick="initAudio();playStartButtonSound();restartGame()">🔄 TEKRAR</button>
                 <button class="go-btn-hs" onclick="showHiScores()">🏆 SKORLAR</button>
                 <button class="go-btn-home" onclick="playMenuClick('close');goHomeFromGameOver()">🏠 MENÜ</button>
             </div>
@@ -1219,8 +1298,8 @@
         <div class="hud-item"><div class="hud-label">ESLESMELER</div><div class="hud-value" id="pairs">0/2</div></div>
         <div class="hud-item"><div class="hud-label">PUAN</div><div class="hud-value" id="score">0</div></div>
         <div class="hud-item"><div class="hud-label">COMBO</div><div class="hud-value" id="combo" style="color:#ffcc00">1x</div></div>
-        <div class="hud-item"><div class="hud-label">TOPLAR</div><div class="hud-value" id="balls" style="color:#00e5ff">6</div></div>
-        <button id="hint-btn" onclick="useHint()">💡 <span id="hint-count">3</span></button>
+        <div class="hud-item" id="balls-hud"><div class="hud-label">TOPLAR</div><div class="hud-value" id="balls" style="color:#00e5ff">6</div></div>
+        <button id="hint-btn" onclick="useHint()"><span class="hint-bulb">💡</span><span class="hint-label">HINT</span><span id="hint-count">3</span></button>
         <button id="hud-music-btn" onclick="toggleMusicPopup(event)">🎵 <span id="hud-music-icon">♪</span></button>
     </div>
     <!-- Müzik popup -->
@@ -1339,7 +1418,7 @@
         <p id="ov-p3">🃏 Kart vurulunca açılır, top TUZ BUZ olur!</p>
         <p id="ov-p4">🔥 Combo: 1 duvar=2x, 2 duvar=4x, 3 duvar=6x puan!</p>
         <p id="ov-p5">🏐 Her seviyede top hakkı = kart sayısının 1.5 katı</p>
-        <button class="btn" id="ov-btn" onclick="playMenuClick('start');startGame()">BAŞLA!</button>
+        <button class="btn" id="ov-btn" onclick="initAudio();playStartButtonSound();startGame()">BAŞLA!</button>
     </div>
     <audio id="bgMusicEl" src="music/gameplay.mp3" loop preload="auto"></audio>
     <audio id="menuMusicEl" src="music/menu.mp3" loop preload="auto"></audio>
@@ -1349,8 +1428,12 @@
     <audio id="level5MusicEl" src="music/level5.mp3" loop preload="auto"></audio>
     <audio id="level6MusicEl" src="music/level6.mp3" loop preload="auto"></audio>
     <audio id="level7MusicEl" src="music/level7.mp3" loop preload="auto"></audio>
+    <audio id="fruit1MusicEl" src="music/fruit1.ogg" loop preload="auto"></audio>
+    <audio id="fruit2MusicEl" src="music/fruit2.ogg" loop preload="auto"></audio>
     <audio id="ballHitEl" src="music/ballhit.ogg" preload="auto"></audio>
     <audio id="lastHitEl" src="music/lasthit.ogg" preload="auto"></audio>
+    <audio id="startEl" src="music/start.ogg" preload="auto"></audio>
+    <audio id="start2El" src="music/start2.mp3" preload="auto"></audio>
     <audio id="win1El" src="music/win1.ogg" preload="auto"></audio>
     <audio id="win2El" src="music/win2.ogg" preload="auto"></audio>
     <audio id="win3El" src="music/win3.ogg" preload="auto"></audio>
@@ -1808,7 +1891,12 @@
         let rescueHintActiveUntil = 0;
         let rescueHintCard = null;
         let slowMoFrames = 0;
+        let lastShotCinematic = { active:false, frames:0, max:0, x:0, y:0, triggered:false };
         let lastWinMusicIdx = -1;
+        let freeHintShownThisOpen = false;
+        let freeHintShotsSinceOpen = 0;
+        let freeHintLastEvaluatedShot = 0;
+        let rescuePulledForCurrentOpen = false;
 
         const GRAVITY = 0.0;
         const BOUNCE_DAMPING = 0.92;
@@ -1887,33 +1975,323 @@
             return false;
         }
 
-        function activateRescueHint(card, reason='rescue') {
+        function clearHintFromCard(card) {
+            if (!card) return;
+            card._hintPulseUntil = 0;
+            card._rescueHitboxUntil = 0;
+            card._hintPersistent = false;
+        }
+
+        function isCardDifficultForShot(target, openedCard=null) {
+            // Bu sadece HINT glow/hitbox yardimi icin kullanilir.
+            // Kartı dışarı fırlatma kararı için ASLA tek başına yeterli değildir.
+            if (!target || !target.alive || target.matched) return false;
+            const blockedFromSling = isLineBlockedByOtherCards(slingshot.x, slingshot.y, target, openedCard, target);
+            let nearbyBlockers = 0;
+            for (const c of cards) {
+                if (!c.alive || c.matched || c === target || c === openedCard) continue;
+                if (Math.hypot(c.x - target.x, c.y - target.y) < target.size * 1.22) nearbyBlockers++;
+            }
+            return blockedFromSling || nearbyBlockers >= 3;
+        }
+
+        function hasClearRescueLaneToCard(target, openedCard=null) {
+            // Cek-cikar icin son emniyet: sapandan hedef kartin merkezine ve kenarlarina
+            // en az bir temiz hat varsa kart aslinda oynanabilirdir, disari alma.
+            if (!target) return true;
+            const r = (target.size || 60) * 0.58;
+            const probes = [
+                {x: target.x, y: target.y},
+                {x: target.x - r, y: target.y},
+                {x: target.x + r, y: target.y},
+                {x: target.x, y: target.y - r},
+                {x: target.x, y: target.y + r},
+                {x: target.x - r*0.72, y: target.y - r*0.72},
+                {x: target.x + r*0.72, y: target.y - r*0.72},
+                {x: target.x - r*0.72, y: target.y + r*0.72},
+                {x: target.x + r*0.72, y: target.y + r*0.72}
+            ];
+            for (const pt of probes) {
+                if (!isLineBlockedByOtherCards(slingshot.x, slingshot.y, {x: pt.x, y: pt.y, size: Math.max(10, target.size*0.35)}, openedCard, target)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function isCardTrulyImpossibleForShot(target, openedCard=null) {
+            // Cek-cikar artik layout duzeltici degil.
+            // YALNIZCA oyuncu bir kart actiktan sonra, o kartin ES karti 4 yandan kapali ve
+            // sapandan makul temiz bir temas hatti yoksa calisir.
+            if (!target || !target.alive || target.matched) return false;
+            if (!openedCard || openedCard.matched || openedCard.pairId !== target.pairId) return false;
+            if (target.revealed) return false;
+
+            const s = target.size || 60;
+            let left=false, right=false, up=false, down=false;
+            let closeBlockers = 0;
+            for (const c of cards) {
+                if (!c.alive || c.matched || c === target || c === openedCard) continue;
+                const dx = c.x - target.x;
+                const dy = c.y - target.y;
+                const adx = Math.abs(dx);
+                const ady = Math.abs(dy);
+                // Sadece neredeyse bitisik 4 yon komsularini say. Gevsek sayim basit kartlari cekiyordu.
+                if (ady < s * 0.42 && adx > s * 0.62 && adx < s * 1.32) {
+                    if (dx < 0) left = true; else right = true;
+                }
+                if (adx < s * 0.42 && ady > s * 0.62 && ady < s * 1.32) {
+                    if (dy < 0) up = true; else down = true;
+                }
+                if (Math.hypot(dx, dy) < s * 1.35) closeBlockers++;
+            }
+
+            const sidesClosed = [left,right,up,down].filter(Boolean).length;
+            // 3 yani kapali artik yetmez. Kullanici hakli: o durumda kart hala oynanabilir olabilir.
+            if (sidesClosed < 4) return false;
+            // Cevrede gercekten yogun kart yoksa disari alma.
+            if (closeBlockers < 4) return false;
+            // Merkez/kenar probe'larindan birinde temiz hat varsa kart oynanabilirdir.
+            if (hasClearRescueLaneToCard(target, openedCard)) return false;
+            return true;
+        }
+
+        function overlapsAnyCard(x, y, size, ignoreCard=null) {
+            for (const c of cards) {
+                if (!c.alive || c.matched || c === ignoreCard) continue;
+                if (Math.abs(c.x - x) < (c.size + size) * 0.60 && Math.abs(c.y - y) < (c.size + size) * 0.60) return true;
+            }
+            return false;
+        }
+
+        function findRescueLandingSpot(card, openedCard=null) {
+            if (!card) return null;
+            const half = card.size / 2;
+            const minX = WALL.left + half + 10, maxX = WALL.right - half - 10;
+            const minY = WALL.top + half + 18, maxY = WALL.bottom - half - 18;
+            let best = null, bestScore = -999999;
+            const clusterX = cards.reduce((a,c)=>a+c.x,0) / Math.max(1,cards.length);
+            const clusterY = cards.reduce((a,c)=>a+c.y,0) / Math.max(1,cards.length);
+            const cols = 7, rows = 8;
+            for (let iy = 0; iy < rows; iy++) {
+                for (let ix = 0; ix < cols; ix++) {
+                    const x = minX + (maxX - minX) * (ix / Math.max(1, cols-1));
+                    const y = minY + (maxY - minY) * (iy / Math.max(1, rows-1));
+                    if (overlapsAnyCard(x, y, card.size, card)) continue;
+                    const blocked = isLineBlockedByOtherCards(slingshot.x, slingshot.y, {x,y,size:card.size}, openedCard, card);
+                    let minDist = 99999;
+                    for (const c of cards) {
+                        if (!c.alive || c.matched || c === card) continue;
+                        minDist = Math.min(minDist, Math.hypot(c.x-x, c.y-y));
+                    }
+                    const edgeBonus = Math.min(Math.abs(x-WALL.left), Math.abs(x-WALL.right), Math.abs(y-WALL.top), Math.abs(y-WALL.bottom));
+                    const outOfCluster = Math.hypot(x-clusterX, y-clusterY);
+                    const slingDist = Math.hypot(x-slingshot.x, y-slingshot.y);
+                    let score = (blocked ? -600 : 700) + minDist * 2.2 + outOfCluster * 0.55 - slingDist * 0.18 - edgeBonus * 0.15;
+                    if (score > bestScore) { bestScore = score; best = {x,y}; }
+                }
+            }
+            return best;
+        }
+
+        function spawnRescueFlyFx(sx, sy, tx, ty) {
+            try {
+                for (let i=0; i<22; i++) {
+                    const a = Math.random() * Math.PI * 2;
+                    const sp = 1 + Math.random()*4;
+                    fxParticles.push(new FXParticle(sx, sy, Math.cos(a)*sp, Math.sin(a)*sp, ['#ffcc00','#00e5ff','#ff3366'][i%3], 3 + Math.random()*4));
+                }
+                setTimeout(() => {
+                    for (let i=0; i<18; i++) {
+                        const a = Math.random() * Math.PI * 2;
+                        const sp = 1 + Math.random()*3;
+                        fxParticles.push(new FXParticle(tx, ty, Math.cos(a)*sp, Math.sin(a)*sp, '#ffcc00', 3 + Math.random()*5));
+                    }
+                }, 350);
+            } catch(e) {}
+        }
+
+        function relocateRescueCard(card, openedCard=null, label=true) {
+            if (!card || card.matched || !card.alive) return false;
+            const spot = findRescueLandingSpot(card, openedCard);
+            if (!spot) return false;
+            if (Math.hypot(card.x - spot.x, card.y - spot.y) < card.size * 0.55) return false;
+            const sx = card.x, sy = card.y;
+            card._rescueMove = { sx, sy, tx: spot.x, ty: spot.y, t: 0 };
+            card.mvx = 0; card.mvy = 0;
+            spawnRescueFlyFx(sx, sy, spot.x, spot.y);
+            if (label) showTicker('🛟 ZOR KART DIŞARI ALINDI!');
+            return true;
+        }
+
+        function showFreeHintGhost() {
+            const btn = document.getElementById('hint-btn');
+            const root = document.body;
+            if (!btn || !root) return;
+            const r = btn.getBoundingClientRect();
+            btn.classList.add('teach-free-hint');
+            setTimeout(() => btn.classList.remove('teach-free-hint'), 4200);
+
+            const oldPointer = document.querySelector('.free-hint-pointer');
+            if (oldPointer) oldPointer.remove();
+
+            const el = document.createElement('div');
+            el.className = 'free-hint-ghost';
+            el.style.position = 'fixed';
+            el.style.left = (r.left + r.width * 0.05) + 'px';
+            el.style.top = (r.top + r.height * 0.10) + 'px';
+            el.innerHTML = '<span class="ghost-bulb">💡</span><span class="ghost-text">BEDAVA<br>HINT</span>';
+            root.appendChild(el);
+            setTimeout(() => el.remove(), 2500);
+
+            const pointer = document.createElement('div');
+            pointer.className = 'free-hint-pointer';
+            pointer.style.left = (r.left + r.width * 0.5) + 'px';
+            pointer.style.top = (r.top + r.height * 0.5) + 'px';
+            const txt = currentLang === 'tr' ? 'BEDAVA HINT BURADA!<br>Buraya basınca eş kart görünür.' : 'FREE HINT HERE!<br>Tap here to reveal the pair.';
+            pointer.innerHTML = '<div class="fhp-box">' + txt + '</div><div class="fhp-line"></div>';
+            root.appendChild(pointer);
+            setTimeout(() => pointer.remove(), 3900);
+        }
+
+        function activateRescueHint(card, reason='rescue', persistent=true, openedCard=null, allowPullOut=false) {
             if (!card || card.matched || !card.alive) return;
+            const baseCard = openedCard || firstHitCard;
+            const impossible = !!baseCard && isCardTrulyImpossibleForShot(card, baseCard);
+            // Cek-cikar sadece: oyuncu bir kart acmis olacak + hedef o kartin esi olacak + gercekten imkansiz olacak.
+            if (allowPullOut && impossible && !rescuePulledForCurrentOpen && baseCard && card.pairId === baseCard.pairId) {
+                if (relocateRescueCard(card, baseCard, reason !== 'tutorial')) rescuePulledForCurrentOpen = true;
+            }
             rescueHintCard = card;
-            rescueHintActiveUntil = performance.now() + 9000;
+            rescueHintActiveUntil = persistent ? Number.POSITIVE_INFINITY : (performance.now() + 9000);
+            card._hintPersistent = !!persistent;
             card._hintPulseUntil = rescueHintActiveUntil;
             card._rescueHitboxUntil = rescueHintActiveUntil;
-            showTicker(reason === 'manual' ? '💡 EŞ KART İŞARETLENDİ!' : '💡 RESCUE HINT: EŞ KART YARDIMI AÇILDI!');
+            if (reason === 'manual') showTicker('💡 EŞ KARTI VUR!');
+            else if (reason === 'tutorial') { showTicker('💡 BEDAVA İPUCU: EŞ KART!'); showFreeHintGhost(); }
+            else showTicker('💡 RESCUE: EŞ KART YARDIMI AÇILDI!');
         }
 
         function maybeActivateRescueHint(openedCard) {
+            // Burasi sadece oyuncu ILK karti actiktan sonra calisir.
+            // Cek-cikar, layout duzeltici degil: yalnizca acilan kartin esi gercekten vurulamazsa devreye girer.
+            if (!openedCard || openedCard.matched || firstHitCard !== openedCard) return;
             const pair = findPairCard(openedCard);
             if (!pair) return;
-            // Direkt çizgi başka kartlarla kesiliyorsa veya eş kart duvar/merkez sıkışıklığına çok yakınsa rescue aç.
-            const blocked = isLineBlockedByOtherCards(slingshot.x, slingshot.y, pair, openedCard, pair);
-            const nearEdge = pair.x > WALL.right - pair.size * 0.8 || pair.y < WALL.top + pair.size * 0.8 || pair.y > WALL.bottom - pair.size * 0.8;
-            if (blocked || nearEdge) activateRescueHint(pair, 'rescue');
+
+            const impossible = isCardTrulyImpossibleForShot(pair, openedCard);
+            if (impossible && !rescuePulledForCurrentOpen) {
+                if (relocateRescueCard(pair, openedCard, true)) {
+                    rescuePulledForCurrentOpen = true;
+                    pair._rescueHitboxUntil = performance.now() + 10000;
+                }
+            }
+
+            // Bedava tutorial hint burada hemen patlamaz; oyuncu biraz oynasin.
+            // 1-3. levelde asagidaki evaluateTutorialFreeHintAfterShot() 2 atista 1 yardim eder.
+        }
+
+        function evaluateTutorialFreeHintAfterShot() {
+            // Ilk 3 bolumde ogretici bedava hint.
+            // Oyuncu once 1 kart acacak; sonra TAM OLARAK her 3 atista 1 bedava hint gosterilir.
+            // Son 2 kart kaldiysa hint verilmez. Oyuncunun 3 manuel hint hakki azalmaz.
+            if (gameState !== 'playing' || levelCleared || isPaused) return;
+            if (currentLevel > 3) return;
+            if (projectiles.length > 0 || revealTimer > 0) return;
+            if (!firstHitCard || firstHitCard.matched) return;
+            if (shotsFired <= freeHintLastEvaluatedShot) return;
+
+            freeHintLastEvaluatedShot = shotsFired;
+
+            const pair = findPairCard(firstHitCard);
+            if (!pair || pair.matched || !pair.alive) return;
+
+            const remainingCards = cards.filter(c => c.alive && !c.matched).length;
+            const remainingPairs = Math.max(0, totalPairs - matchedPairs);
+            if (remainingCards <= 2 || remainingPairs <= 1) return; // Son 2 karta hint yok.
+
+            freeHintShotsSinceOpen++;
+            const impossible = isCardTrulyImpossibleForShot(pair, firstHitCard);
+
+            // Her 3 tamamlanmis atista 1 bedava hint ver.
+            // Fazladan acil-yardim/erken tetikleme yok; kullanici istegine gore sabit kural.
+            const thirdShotHelp = (freeHintShotsSinceOpen > 0 && freeHintShotsSinceOpen % 3 === 0);
+            if (!thirdShotHelp) return;
+
+            // Hint zaten aktifse karti yeniden tasima/hak eksiltme yok; sadece sag ustteki butonu tanit.
+            if (pair._hintPersistent && pair._hintPulseUntil) {
+                showFreeHintGhost();
+                return;
+            }
+
+            activateRescueHint(pair, 'tutorial', true, firstHitCard, impossible);
         }
 
         function useHint() {
             if (gameState !== 'playing' || levelCleared || isPaused) return;
-            if (hintsLeft <= 0) { showTicker('💡 HINT BİTTİ!'); updateHintHUD(); return; }
-            if (!firstHitCard || firstHitCard.matched) { showTicker('ÖNCE BİR KART AÇ!'); return; }
+            if (!firstHitCard || firstHitCard.matched) {
+                showTicker('⚠ ÖNCE BİR KART AÇ!');
+                return;
+            }
             const pair = findPairCard(firstHitCard);
             if (!pair) { showTicker('EŞ KART BULUNAMADI'); return; }
+
+            // Zaten gösteriliyorsa tekrar hak yeme.
+            if (pair._hintPersistent && pair._hintPulseUntil) {
+                showTicker('💡 EŞ KART ZATEN GÖSTERİLİYOR!');
+                return;
+            }
+
+            if (hintsLeft <= 0) { showTicker('💡 HINT BİTTİ!'); updateHintHUD(); return; }
+
             hintsLeft--;
-            activateRescueHint(pair, 'manual');
+
+            // Manuel hint: sadece gercekten imkansizsa karti disari alir; normal vurulabilir kartlarda sadece isaret/hitbox yardimi verir.
+            const impossible = isCardTrulyImpossibleForShot(pair, firstHitCard);
+            activateRescueHint(pair, impossible ? 'rescue' : 'manual', true, firstHitCard, impossible);
             updateHintHUD();
+        }
+
+        function startLastShotCinematic(x, y, frames=42) {
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+            lastShotCinematic.active = true;
+            lastShotCinematic.frames = Math.max(lastShotCinematic.frames, frames);
+            lastShotCinematic.max = Math.max(lastShotCinematic.max, frames);
+            lastShotCinematic.x = x;
+            lastShotCinematic.y = y;
+            slowMoFrames = Math.max(slowMoFrames, frames);
+        }
+
+        function applyGameCamera() {
+            if (!lastShotCinematic.active || lastShotCinematic.frames <= 0) return;
+            const max = Math.max(1, lastShotCinematic.max || 1);
+            const t = lastShotCinematic.frames / max;
+            const pulse = Math.sin((1 - t) * Math.PI);
+            // Ilk kareden itibaren hissedilir zoom: kullanici artik slow/zoom'u net gorur.
+            const zoom = 1 + 0.18 + 0.46 * pulse;
+            const cx = lastShotCinematic.x || W/2;
+            const cy = lastShotCinematic.y || H/2;
+            ctx.translate(W/2, H/2);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-cx, -cy);
+        }
+
+        function drawCinematicOverlay() {
+            if (!lastShotCinematic.active || lastShotCinematic.frames <= 0) return;
+            const max = Math.max(1, lastShotCinematic.max || 1);
+            const alpha = Math.min(0.48, 0.24 + (lastShotCinematic.frames / max) * 0.24);
+            ctx.save();
+            ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+            ctx.fillRect(0, 0, W, H);
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = '#ffcc00';
+            ctx.font = `900 ${Math.max(20, Math.min(42, W*0.08))}px 'Courier New', monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = '#ff3366';
+            ctx.shadowBlur = 24;
+            ctx.fillText(currentLang === 'tr' ? 'SON TOP!' : 'LAST SHOT!', W/2, WALL.top + 58);
+            ctx.restore();
         }
 
         function playFileSfx(id, volume=1.0) {
@@ -1934,8 +2312,16 @@
             return playFileSfx('ballHitEl', 0.85);
         }
 
+        function playStartButtonSound() {
+            return playFileSfx('startEl', 1.0) || (playMenuClick('start'), false);
+        }
+
+        function playNameContinueSound() {
+            return playFileSfx('start2El', 1.0) || (playMenuClick('start'), false);
+        }
+
         function triggerLastShotImpact(x, y) {
-            slowMoFrames = Math.max(slowMoFrames, 28);
+            startLastShotCinematic(x, y, 105);
             let el = document.createElement('div');
             el.style.cssText = `position:absolute;left:${x}px;top:${y}px;transform:translate(-50%,-50%);
                 z-index:55;pointer-events:none;font-family:'Courier New',monospace;
@@ -1946,6 +2332,25 @@
             const gw = document.getElementById('game-wrapper') || document.body;
             gw.appendChild(el);
             setTimeout(() => el.remove(), 750);
+        }
+
+
+        function predictLastShotFocus(vx, vy) {
+            let best = null, bestScore = 999999;
+            const sp = Math.hypot(vx, vy) || 1;
+            const nx = vx / sp, ny = vy / sp;
+            for (const c of cards) {
+                if (!c.alive || c.matched) continue;
+                const rx = c.x - slingshot.x;
+                const ry = c.y - (slingshot.y - 13);
+                const forward = rx * nx + ry * ny;
+                if (forward < -20) continue;
+                const side = Math.abs(rx * ny - ry * nx);
+                const score = side + Math.max(0, forward) * 0.05;
+                if (score < bestScore) { bestScore = score; best = c; }
+            }
+            if (best && bestScore < Math.max(150, best.size * 2.4)) return best;
+            return cards.find(c => c.alive && !c.matched) || null;
         }
 
         function startRandomWinMusic() {
@@ -3397,6 +3802,16 @@
             hide() { this.revealed = false; }
 
             update() {
+                if (this._rescueMove) {
+                    const m = this._rescueMove;
+                    m.t = Math.min(1, m.t + 0.055);
+                    const e = 1 - Math.pow(1 - m.t, 3);
+                    const arc = Math.sin(e * Math.PI) * this.size * 0.65;
+                    this.x = m.sx + (m.tx - m.sx) * e;
+                    this.y = m.sy + (m.ty - m.sy) * e - arc;
+                    this.shake = Math.max(this.shake, 1.8);
+                    if (m.t >= 1) { this.x = m.tx; this.y = m.ty; this._rescueMove = null; }
+                }
                 if (this.shake > 0) { this.shake *= 0.85; if (this.shake < 0.5) this.shake = 0; }
                 if (this.revealTimer > 0) {
                     this.revealTimer--;
@@ -3445,7 +3860,7 @@
                 }
 
                 // Hint / rescue isareti: es karti parlat ve ok gibi hedef goster
-                if (this._hintPulseUntil && performance.now() < this._hintPulseUntil && !this.matched && this.alive) {
+                if (this._hintPulseUntil && (this._hintPersistent || performance.now() < this._hintPulseUntil) && !this.matched && this.alive) {
                     const pulse = 0.55 + Math.sin(performance.now() / 90) * 0.35;
                     ctx.save();
                     ctx.globalAlpha = 0.65 + pulse * 0.35;
@@ -3468,7 +3883,7 @@
             checkHit(px, py) {
                 // Kartlar arasindaki minicik bosluklardan top kacmasin diye toleransli hitbox.
                 let pad = Math.max(7, this.size * 0.08);
-                if (this._rescueHitboxUntil && performance.now() < this._rescueHitboxUntil) {
+                if (this._rescueHitboxUntil && (this._hintPersistent || performance.now() < this._rescueHitboxUntil)) {
                     pad += Math.max(16, this.size * 0.30); // Rescue hint aktifken es kart daha affedici olur
                 }
                 return px > this.x - this.size/2 - pad && px < this.x + this.size/2 + pad &&
@@ -3477,13 +3892,15 @@
         }
 
         class Ball {
-            constructor(x, y, vx, vy, isLastShot=false) {
+            constructor(x, y, vx, vy, isLastShot=false, isCinematicShot=false) {
                 this.x = x; this.y = y; this.prevX = x; this.prevY = y;
+                this.startX = x; this.startY = y;
                 this.vx = vx; this.vy = vy;
                 this.radius = 9; this.active = true;
                 this.bounces = 0;
                 this.hitFirstCard = false;
                 this.isLastShot = isLastShot;
+                this.isCinematicShot = isLastShot || isCinematicShot;
                 this.speedMult = 1.0; // Her duvara çarpınca 1.2x artar
                 this.totalWallBounces = 0; // toplam duvar sekme sayacı
             }
@@ -3522,7 +3939,27 @@
             update() {
                 if (!this.active) return;
                 this.prevX = this.x; this.prevY = this.y;
-                const slowFactor = (slowMoFrames > 0 && this.isLastShot) ? 0.38 : 1;
+                if (this.isCinematicShot && !lastShotCinematic.triggered && cards && cards.length) {
+                    let nearest = null, nearestD = 999999;
+                    for (const c of cards) {
+                        if (!c.alive || c.matched) continue;
+                        const d = Math.hypot(c.x - this.x, c.y - this.y);
+                        if (d < nearestD) { nearestD = d; nearest = c; }
+                    }
+                    if (nearest) {
+                        const dx = nearest.x - this.x, dy = nearest.y - this.y;
+                        const sp = Math.hypot(this.vx, this.vy) || 1;
+                        const approaching = (dx * this.vx + dy * this.vy) / sp > -8;
+                        const traveled = Math.hypot(this.x - (this.startX || this.x), this.y - (this.startY || this.y));
+                        // Slow/zoom sapandan cikista degil; kartlara yaklasirken, yaklasik 3 kart mesafede baslar.
+                        const triggerDist = Math.max(190, nearest.size * 3.05);
+                        if (approaching && traveled > 130 && nearestD < triggerDist) {
+                            lastShotCinematic.triggered = true;
+                            startLastShotCinematic(nearest.x, nearest.y, 110);
+                        }
+                    }
+                }
+                const slowFactor = (slowMoFrames > 0 && this.isCinematicShot) ? 0.12 : 1;
                 this.x += this.vx * slowFactor; this.y += this.vy * slowFactor;
                 let bounced = false;
 
@@ -3723,9 +4160,49 @@
             return positions;
         }
 
+
+        function shuffleCopy(arr) {
+            const copy = arr.slice();
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function getFruitIconsForLevel(level, pairCount) {
+            const base = ['🍎','🍌','🍇','🍊','🍓','🍉','🍒','🥝'];
+            const mid = ['🍍','🥭','🍑','🍐','🥥','🥑'];
+            const advanced = ['🍋','🍈','🍏','🍅'];
+
+            // Level 1-4: klasik meyveler, oyuncu alışsın.
+            if (level < 5) return base.slice(0, pairCount);
+
+            let selected = [];
+            const addUnique = (icon) => {
+                if (selected.length < pairCount && !selected.includes(icon)) selected.push(icon);
+            };
+
+            if (level < 10) {
+                // Level 5-9: her bölümde birkaç yeni meyve garanti gelsin.
+                const forcedNewCount = Math.min(pairCount, 2 + Math.floor((level - 5) / 2));
+                shuffleCopy(mid).slice(0, forcedNewCount).forEach(addUnique);
+                shuffleCopy(base.concat(mid)).forEach(addUnique);
+                return selected.slice(0, pairCount);
+            }
+
+            // Level 10+: daha değişik/ileri meyveler de havuza girsin.
+            const forcedAdvancedCount = Math.min(pairCount, 3);
+            shuffleCopy(advanced).slice(0, forcedAdvancedCount).forEach(addUnique);
+            shuffleCopy(mid).slice(0, Math.min(2, pairCount - selected.length)).forEach(addUnique);
+            shuffleCopy(base.concat(mid, advanced)).forEach(addUnique);
+            return selected.slice(0, pairCount);
+        }
+
         function initLevel(level) {
             cards = []; projectiles = []; fxParticles = []; fruitParticles = []; burnParticles = [];
-            rescueHintCard = null; rescueHintActiveUntil = 0; slowMoFrames = 0;
+            rescueHintCard = null; rescueHintActiveUntil = 0; slowMoFrames = 0; freeHintShownThisOpen = false; freeHintShotsSinceOpen = 0; freeHintLastEvaluatedShot = 0; rescuePulledForCurrentOpen = false;
+            lastShotCinematic = { active:false, frames:0, max:0, x:0, y:0, triggered:false };
             perfectLevel = true;
             window._fadingForGameOver = false; _pendingBonusBalls = 0;
             try { initBgTheme(level, W, H); } catch(e) { console.warn('initBgTheme failed', e); }
@@ -3744,8 +4221,7 @@
             let pairCount = Math.min(2 + (level - 1), 8);
             totalPairs = pairCount;
 
-            let allIcons = ['🍎','🍌','🍇','🍊','🍓','🍉','🍒','🥝'];
-            let icons = allIcons.slice(0, pairCount);
+            let icons = getFruitIconsForLevel(level, pairCount);
             // KESIN KURAL: Her sembolden TAM 2 adet, toplam CIFT sayi kart
             let cardData = [];
             icons.forEach((icon, idx) => {
@@ -3844,7 +4320,7 @@
                         p.hitCard(); // duvar sayacı sıfırla
                         p._hitCard = true;
                         if (!playBallHitFile(!!p.isLastShot)) playCardHitSound();
-                        if (p.isLastShot) triggerLastShotImpact(p.x, p.y);
+                        if (p.isLastShot || p.isCinematicShot) triggerLastShotImpact(p.x, p.y);
                         p.destroy();
 
                         if (!c.revealed) {
@@ -3853,6 +4329,10 @@
 
                             if (firstHitCard === null) {
                                 firstHitCard = c;
+                                freeHintShownThisOpen = false;
+                                freeHintShotsSinceOpen = 0;
+                                freeHintLastEvaluatedShot = shotsFired; // Bu karti acan atisi bedava hint sayacina dahil etme.
+                                rescuePulledForCurrentOpen = false;
                                 firstHitCardFireRatio = p.getFireRatio ? p.getFireRatio() : 0;
                                 maybeActivateRescueHint(c);
                                 showTicker(t('cardOpen', c.icon));
@@ -3894,6 +4374,8 @@
                                         flyBallsToHUD(midX, midY, bonusBalls);
                                     }
 
+                                    clearHintFromCard(firstHitCard);
+                                    clearHintFromCard(c);
                                     firstHitCard.matched = true;
                                     c.matched = true;
                                     matchedPairs++;
@@ -3941,6 +4423,8 @@
                                     playMatchSound();
 
                                     firstHitCard = null;
+                                    freeHintShotsSinceOpen = 0;
+                                    freeHintLastEvaluatedShot = shotsFired;
                                     updateComboDisplay();
                                     updateHUD();
                                 } else {
@@ -3977,9 +4461,11 @@
                 }
             }
 
+            evaluateTutorialFreeHintAfterShot();
+
             if (matchedPairs >= totalPairs && !levelCleared && gameState === 'playing') {
                 levelCleared = true;
-                playLevelClearSound();
+                // Eski "diridi diridi" level-clear synth sesi kaldirildi; win*.ogg + bonus sayim tikleri yeterli.
                 // PERFECT kontrolü
                 if (perfectLevel) {
                     pendingPerfectBalls = 2;
@@ -4107,6 +4593,9 @@
                 ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
             }
 
+            ctx.save();
+            if (gameState === 'playing') applyGameCamera();
+
             drawWalls();
 
             if (gameState === 'playing' && !isPaused) {
@@ -4137,6 +4626,13 @@
                 cards.filter(c => !c.revealed && c.alive).forEach(c => c.draw());
                 cards.filter(c => c.revealed && c.alive).forEach(c => c.draw());
                 drawSlingshot();
+            }
+
+            ctx.restore();
+            if (lastShotCinematic.active && lastShotCinematic.frames > 0) {
+                drawCinematicOverlay();
+                lastShotCinematic.frames--;
+                if (lastShotCinematic.frames <= 0) lastShotCinematic.active = false;
             }
 
             requestAnimationFrame(gameLoop);
@@ -4192,7 +4688,10 @@
 
                 if (ballsLeft > 0 && revealTimer <= 0) {
                     const isLastShot = (ballsLeft === 1);
-                    projectiles.push(new Ball(slingshot.x, slingshot.y - 13, vx, vy, isLastShot));
+                    const isFinalPairShot = !!(firstHitCard && !firstHitCard.matched && matchedPairs === totalPairs - 1);
+                    const isDramaticShot = isLastShot || isFinalPairShot;
+                    // Cinematic/slow-mo sapandan cikista baslamaz; top kartlara yaklasinca Ball.update icinde tetiklenir.
+                    projectiles.push(new Ball(slingshot.x, slingshot.y - 13, vx, vy, isLastShot, isDramaticShot));
                     ballsLeft--;
                     shotsFired++;
                     canShoot = false;
@@ -4597,6 +5096,7 @@
             if(safe('h3')) safe('h3').textContent = s.h3;
             if(safe('h4')) safe('h4').textContent = s.h4;
             if(safe('ws-start-btn')) safe('ws-start-btn').textContent = s.startBtn;
+            if(safe('demo-skip-btn')) safe('demo-skip-btn').textContent = currentLang === 'tr' ? 'DEMOYU GEÇ ▶' : 'SKIP ▶';
             if(safe('player-name')) safe('player-name').placeholder = s.namePlaceholder;
             if(safe('ws-name-label')) safe('ws-name-label').textContent = s.nameLabel;
             if(safe('ws-settings-btn')) safe('ws-settings-btn').textContent = s.wsSettings;
@@ -4870,6 +5370,7 @@
             document.getElementById('player-name').value = val;
             playerName = val;
             document.getElementById('name-spotlight').classList.remove('show');
+            playNameContinueSound();
             launchGame();
         }
 
@@ -4904,6 +5405,8 @@
             demoH = demoCanvas.height = window.innerHeight;
             const lbl = document.getElementById('demo-no-show-label');
             if (lbl) lbl.textContent = getDT().noShowTxt;
+            const skipBtn = document.getElementById('demo-skip-btn');
+            if (skipBtn) skipBtn.textContent = currentLang === 'tr' ? 'DEMOYU GEÇ ▶' : 'SKIP ▶';
             // Override endDemo to go to overlay
             // afterDemo artık kullanılmıyor, endDemoToGame hallediyor
             startDemoPhase(0);
@@ -5279,7 +5782,7 @@
                     clearInterval(countInt);
                     totalScore += bonusTotal;
                     updateHUD();
-                    playLevelClearSound();
+                    // Eski "diridi diridi" level-clear synth sesi burada da kapatildi.
                     setTimeout(() => {
                         stopConfetti();
                         stopWinMusic();
@@ -5419,7 +5922,7 @@
         }
 
         function fadeOutAllMusic(duration=800, cb) {
-            const ids = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','win1El','win2El','win3El','win4El','win5El'];
+            const ids = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','fruit1MusicEl','fruit2MusicEl','win1El','win2El','win3El','win4El','win5El'];
             const playing = ids.map(id => document.getElementById(id)).filter(a => a && !a.paused);
             if (playing.length === 0) { if(cb) cb(); return; }
             let done = 0;
@@ -5451,7 +5954,7 @@
             updateHmpSliderGrad(val);
             gameSettings.musicVol = val;
             const v = (val / 100) * 0.35;
-            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','win1El','win2El','win3El','win4El','win5El'].forEach(id => {
+            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','fruit1MusicEl','fruit2MusicEl','win1El','win2El','win3El','win4El','win5El'].forEach(id => {
                 const a = document.getElementById(id); if(a) a.volume = v;
             });
             // Settings slider ile de senkronize et
@@ -5469,7 +5972,7 @@
 
         function toggleHmpMute() {
             hudMusicMuted = !hudMusicMuted;
-            const allIds = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','win1El','win2El','win3El','win4El','win5El'];
+            const allIds = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','fruit1MusicEl','fruit2MusicEl','win1El','win2El','win3El','win4El','win5El'];
             if (hudMusicMuted) {
                 // Fade out
                 allIds.forEach(id => {
@@ -5723,7 +6226,7 @@
                 comboPrefix:'x COMBO!', rememberTxt:'HATIRLA!', wrongIcon:'❌ FARKLI İKON!',
                 wrongSub:'FARKLI İKONLAR EŞLEŞMEDİ!', findSame:'AYNI İKONU BUL! 👉',
                 matched:'✅ EŞLEŞTİ! +PUAN!', bonusBall:'+1 🏐 BONUS TOP!',
-                readyTxt:'Hazır mısın? Hadi BAŞLA!', skipHint:'👇 sag alttaki SKIP ile ilerle',
+                readyTxt:'Hazır mısın? Hadi BAŞLA!', skipHint:'👇 sağ alttaki DEMOYU GEÇ ile atla',
                 noShowTxt:'Bir daha gösterme', goingCard:'KARTA GİDİYOR!', wallHit:'DUVARA ÇARPTI!',
                 fireWarning:'🔥 TOP KIZARIYOR — TEHLİKELİ!', whatIs:'BU NE?', release:'BIRAK!'
             },
@@ -5860,7 +6363,7 @@
             const lbl = document.getElementById('demo-no-show-label');
             if (lbl) lbl.textContent = getDT().noShowTxt;
             const skipBtn = document.getElementById('demo-skip-btn');
-            if (skipBtn) skipBtn.textContent = 'SKIP ▶';
+            if (skipBtn) skipBtn.textContent = currentLang === 'tr' ? 'DEMOYU GEÇ ▶' : 'SKIP ▶';
             startDemoPhase(0);
             requestAnimationFrame(demoLoop);
         }
@@ -6101,6 +6604,28 @@
             return false;
         }
 
+        function demoDrawHintTutorial(D,W,H,alpha) {
+            if (alpha <= 0) return;
+            demoCtx.save();
+            demoCtx.globalAlpha = Math.min(1, alpha);
+            const bx = W * 0.78, by = H * 0.17;
+            demoCtx.fillStyle = 'rgba(255,204,0,0.12)';
+            demoCtx.strokeStyle = '#ffcc00';
+            demoCtx.lineWidth = 2.5;
+            demoCtx.shadowColor = '#ffcc00'; demoCtx.shadowBlur = 14;
+            demoCtx.beginPath(); demoCtx.roundRect(bx-54, by-23, 108, 46, 12); demoCtx.fill(); demoCtx.stroke();
+            demoCtx.font = 'bold '+Math.round(H*.022)+'px monospace';
+            demoCtx.fillStyle = '#ffcc00'; demoCtx.textAlign = 'center'; demoCtx.textBaseline = 'middle';
+            demoCtx.fillText('💡 HINT', bx, by-4);
+            demoCtx.font = 'bold '+Math.round(H*.016)+'px monospace';
+            demoCtx.fillText(currentLang === 'tr' ? 'EŞİ GÖSTERİR' : 'SHOWS MATCH', bx, by+15);
+            const target = D.cards[1];
+            demoCtx.setLineDash([7,5]);
+            demoCtx.beginPath(); demoCtx.moveTo(bx-36, by+28); demoCtx.lineTo(target.x, target.y-target.size*.75); demoCtx.stroke();
+            demoCtx.setLineDash([]);
+            demoCtx.restore();
+        }
+
         // ── SAHNE 0: Sapan çek, bırak, top uçsun ─────────────────
         function dp0(D,W,H,wall) {
             let t=demoT, dt=getDT();
@@ -6216,6 +6741,7 @@
                 let a=t/35;
                 demoPoint(c1.x,c1.y,a,c1.icon); demoPoint(c2.x,c2.y,a,c2.icon);
                 demoDrawBigText(dt.findSame,W/2,H*.27,'#00ff88',a);
+                demoDrawHintTutorial(D,W,H,a);
                 D.arrowAlpha=a; D.ax1=c2.x; D.ay1=c2.y-c2.size/2; D.ax2=c1.x; D.ay2=c1.y+c1.size/2; D.arrowColor='#00ff88';
             } else if(t<90){
                 let prog=(t-35)/55;
@@ -6395,7 +6921,7 @@
             document.getElementById('st-music-vol-val').textContent = val;
             updateSliderGradient(document.getElementById('st-music-vol'), '#00ffff');
             const v = (val / 100) * 0.35;
-            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','win1El','win2El','win3El','win4El','win5El'].forEach(id => {
+            ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','fruit1MusicEl','fruit2MusicEl','win1El','win2El','win3El','win4El','win5El'].forEach(id => {
                 const a = document.getElementById(id);
                 if(a) a.volume = v;
             });
@@ -6429,7 +6955,7 @@
             }
         }
 
-        const ALL_LEVEL_MUSIC = ['bgMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'];
+        const ALL_LEVEL_MUSIC = ['bgMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','fruit1MusicEl','fruit2MusicEl'];
         let lastRandomMusicIdx = -1;
 
         function getLevelMusicEl(level) {
@@ -6464,7 +6990,7 @@
         }
 
         function stopBgMusic(cb) {
-            const ids = ['bgMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl'];
+            const ids = ['bgMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','fruit1MusicEl','fruit2MusicEl'];
             const playing = ids.map(id => document.getElementById(id)).filter(a => a && !a.paused);
             bgMusicNode = null;
             if (playing.length === 0) { if(cb) cb(); return; }
