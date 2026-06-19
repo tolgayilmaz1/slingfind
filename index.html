@@ -1218,8 +1218,8 @@
 
                 <!-- DİL AYARLARI -->
                 <div class="settings-section settings-lang-section">
-                    <div class="settings-section-title clickable" id="st-lang-title" onclick="toggleLanguageSettings()">🌍 LANGUAGE <span class="settings-chevron" id="st-lang-chevron">▶</span></div>
-                    <div class="lang-grid collapsed" id="st-lang-grid">
+                    <div class="settings-section-title clickable open" id="st-lang-title" onclick="toggleLanguageSettings()">🌍 LANGUAGE <span class="settings-chevron" id="st-lang-chevron">▼</span></div>
+                    <div class="lang-grid open" id="st-lang-grid">
                         <button class="lang-grid-btn" data-lang="tr" onclick="playMenuClick('lang');setLangFromSettings('tr')">🇹🇷 Türkçe</button>
                         <button class="lang-grid-btn active" data-lang="en" onclick="playMenuClick('lang');setLangFromSettings('en')">🇬🇧 English</button>
                         <button class="lang-grid-btn" data-lang="de" onclick="playMenuClick('lang');setLangFromSettings('de')">🇩🇪 Deutsch</button>
@@ -1294,11 +1294,6 @@
                 </div>
 
             </div>
-                <!-- ADMIN -->
-                <div class="settings-section">
-                    <div class="settings-section-title">🔐 ADMİNİSTRATOR</div>
-                    <button class="settings-admin-btn" onclick="openAdminModal()">⚠ YÖNETİCİ PANELİ</button>
-                </div>
 
             <div id="settings-close-wrap">
                 <button class="settings-close-btn" id="st-close-btn" onclick="playMenuClick('close');hideSettings()">✕ KAPAT</button>
@@ -5229,8 +5224,8 @@
             if(safe('settings-title')) safe('settings-title').textContent = s.stTitle;
             if(safe('st-sound-title')) safe('st-sound-title').textContent = s.stSoundTitle;
             if(safe('st-game-title')) safe('st-game-title').textContent = s.stGameTitle;
-            if(safe('st-lang-title')) safe('st-lang-title').innerHTML = `${s.stLangTitle} <span class="settings-chevron" id="st-lang-chevron">▶</span>`;
-            syncLanguageSettingsPanel(false);
+            if(safe('st-lang-title')) safe('st-lang-title').innerHTML = `${s.stLangTitle} <span class="settings-chevron" id="st-lang-chevron">▼</span>`;
+            syncLanguageSettingsPanel(true);
             if(safe('st-master-label')) safe('st-master-label').innerHTML = '<span>🔊</span>' + s.stMaster;
             if(safe('st-sfx-label')) safe('st-sfx-label').innerHTML = '<span>💥</span>' + s.stSfx;
             if(safe('st-music-label')) safe('st-music-label').innerHTML = '<span>🎵</span>' + s.stMusic;
@@ -7107,7 +7102,7 @@
         }
 
         function showSettings() {
-            syncLanguageSettingsPanel(false);
+            syncLanguageSettingsPanel(true);
             const settingsScroll = document.getElementById('settings-scroll');
             if (settingsScroll) settingsScroll.scrollTop = 0;
             document.getElementById('settings-panel').classList.add('show');
