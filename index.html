@@ -25,9 +25,9 @@
             position: absolute; top: 0; left: 0; right: 0;
             background: linear-gradient(180deg, #180a2b, #080312);
             border-bottom: 2px solid #ff3366;
-            padding: max(6px, env(safe-area-inset-top)) 8px 6px 8px;
+            padding: max(6px, env(safe-area-inset-top)) 225px 6px 4px;
             color: white;
-            display: flex; gap: 0; align-items: center; justify-content: space-around;
+            display: flex; gap: 0; align-items: center; justify-content: space-between;
             box-shadow: 0 0 16px rgba(255, 51, 102, 0.4); z-index: 10;
             white-space: nowrap; position: relative;
         }
@@ -413,15 +413,21 @@
         /* HUD müzik butonu */
         #hud-music-btn {
             position: absolute; right: 4px; top: 2px;
-            background: rgba(0,229,255,0.12); border: 1.5px solid #00e5ff;
-            color: #00e5ff; font-size: 10px; font-weight: 900;
-            padding: 2px 6px; cursor: pointer; font-family: inherit;
-            letter-spacing: 1px; white-space: nowrap;
-            transition: all 0.15s; border-radius: 2px;
-            display: flex; align-items: center; gap: 3px; z-index: 11;
+            width: 38px; height: 34px; padding: 0;
+            background: rgba(0,229,255,0.10); border: 1.5px solid #00e5ff;
+            cursor: pointer; font-family: inherit; white-space: nowrap;
+            transition: all 0.15s; border-radius: 7px;
+            display: flex; align-items: center; justify-content: center; z-index: 11;
+            overflow: hidden;
         }
         #hud-music-btn:hover { background: rgba(0,229,255,0.22); box-shadow: 0 0 8px #00e5ff; }
-        #hud-music-btn.muted { border-color: #555; color: #555; background: transparent; }
+        #hud-music-btn.muted { border-color: #555; background: rgba(20,20,20,0.55); }
+        #hud-music-img {
+            width: 30px; height: 30px; object-fit: contain; display: block;
+            filter: drop-shadow(0 0 5px rgba(0,229,255,0.55));
+            pointer-events: none;
+        }
+        #hud-music-btn.muted #hud-music-img { filter: drop-shadow(0 0 5px rgba(255,51,102,0.45)); }
 
         /* Müzik ses slider popup */
         #hud-music-popup {
@@ -542,9 +548,31 @@
             border-top: 7px solid transparent; border-bottom: 7px solid transparent;
         }
 
-        /* Top sayacini hint ikonundan biraz sola al */
-        #balls-hud { transform: translateX(-34px); }
-        @media (max-width: 420px) { #balls-hud { transform: translateX(-26px); } }
+        /* TOP/BALL LEFT sayaci artik normal HUD item: ipucu/muzik sabit sagda kalir, sayac sola akar */
+        #balls-hud {
+            position: static;
+            flex: 1;
+            min-width: 74px;
+            transform: none;
+            z-index: 13;
+            pointer-events: none;
+        }
+        #balls-hud .hud-label { color: #00e5ff; letter-spacing: 0; }
+        @media (min-width: 900px) {
+            #hud .hud-item { flex: 0 0 18%; }
+            #hud .hud-item:first-of-type { flex-basis: 13%; }
+        }
+        @media (max-width: 520px) {
+            #hud { padding-right: 150px; padding-left: 2px; }
+            .hud-label { font-size: 7px; letter-spacing: 0; }
+            .hud-value { font-size: 14px; }
+            #balls-hud { min-width: 62px; }
+            #hint-btn { right: 42px; padding: 3px 7px; font-size: 10px; }
+            #hint-btn .hint-bulb { font-size: 14px; }
+            #hint-btn .hint-label { font-size: 9px; }
+            #hud-music-btn { right: 2px; width: 36px; height: 32px; }
+            #hud-music-img { width: 28px; height: 28px; }
+        }
 
 
         /* ===== ADMIN PANEL ===== */
@@ -908,6 +936,16 @@
         }
         .menu-item:hover { background: rgba(255,204,0,0.08); color: #ffcc00; }
         .menu-item-danger:hover { background: rgba(255,51,102,0.1); color: #ff3366; }
+        .menu-item-home-top {
+            margin: 0 12px 8px; width: calc(100% - 24px);
+            border: 2px solid rgba(255,51,102,0.55);
+            background: rgba(255,51,102,0.10);
+            color: #ffcc00;
+        }
+        .menu-item-home-top:hover {
+            background: rgba(255,204,0,0.13); color: #ffcc00;
+            border-color: #ffcc00; box-shadow: 0 0 12px rgba(255,204,0,0.28);
+        }
         .menu-item-vol { flex-wrap: wrap; cursor: default; align-items: flex-start; }
         .menu-item-vol:hover { background: transparent; color: #ddd; }
 
@@ -1372,13 +1410,13 @@
         <button id="menu-btn" onclick="toggleMenu()" title="Menü">
             <span></span><span></span><span></span>
         </button>
-        <div class="hud-item"><div class="hud-label">SEVIYE</div><div class="hud-value" id="level">1</div></div>
-        <div class="hud-item"><div class="hud-label">ESLESMELER</div><div class="hud-value" id="pairs">0/2</div></div>
-        <div class="hud-item"><div class="hud-label">PUAN</div><div class="hud-value" id="score">0</div></div>
-        <div class="hud-item"><div class="hud-label">COMBO</div><div class="hud-value" id="combo" style="color:#ffcc00">1x</div></div>
-        <div class="hud-item" id="balls-hud"><div class="hud-label">TOPLAR</div><div class="hud-value" id="balls" style="color:#00e5ff">6</div></div>
+        <div class="hud-item"><div class="hud-label" id="hud-label-level">SEVIYE</div><div class="hud-value" id="level">1</div></div>
+        <div class="hud-item"><div class="hud-label" id="hud-label-pairs">ESLESMELER</div><div class="hud-value" id="pairs">0/2</div></div>
+        <div class="hud-item"><div class="hud-label" id="hud-label-score">PUAN</div><div class="hud-value" id="score">0</div></div>
+        <div class="hud-item"><div class="hud-label" id="hud-label-combo">COMBO</div><div class="hud-value" id="combo" style="color:#ffcc00">1x</div></div>
+        <div class="hud-item" id="balls-hud"><div class="hud-label" id="hud-label-balls">TOP</div><div class="hud-value" id="balls" style="color:#00e5ff">6</div></div>
         <button id="hint-btn" onclick="useHint()"><span class="hint-bulb">💡</span><span class="hint-label">HINT</span><span id="hint-count">3</span></button>
-        <button id="hud-music-btn" onclick="toggleMusicPopup(event)">🎵 <span id="hud-music-icon">♪</span></button>
+        <button id="hud-music-btn" onclick="toggleHudMusicButton(event)" title="Music"><img id="hud-music-img" src="musicon.png" alt="Music On"></button>
     </div>
     <!-- Müzik popup -->
     <div id="hud-music-popup">
@@ -1394,6 +1432,12 @@
     <div id="menu-drawer">
         <div id="menu-drawer-inner">
             <div class="menu-game-title">SLING FIND</div>
+
+            <!-- ANA MENÜ - en üste alındı -->
+            <button class="menu-item menu-item-danger menu-item-home-top" onclick="menuGoHome()">
+                <span class="menu-icon">🏠</span>
+                <span class="menu-label" id="menu-home-label">ANA MENÜ</span>
+            </button>
 
             <!-- PAUSE -->
             <button class="menu-item" id="menu-pause-btn" onclick="togglePause()">
@@ -1458,12 +1502,6 @@
             <button class="menu-item" onclick="menuHiScores()">
                 <span class="menu-icon">🏆</span>
                 <span class="menu-label" id="menu-hs-label">HI-SCORES</span>
-            </button>
-
-            <!-- ANA MENÜ -->
-            <button class="menu-item menu-item-danger" onclick="menuGoHome()">
-                <span class="menu-icon">🏠</span>
-                <span class="menu-label" id="menu-home-label">ANA MENÜ</span>
             </button>
 
             <!-- ÇIKIŞ -->
@@ -4807,7 +4845,7 @@
                 ovP3: '🃏 Kart vurulunca açılır, top paramparça olur!',
                 ovP4: '🔥 Combo: 1 duvar=2x, 2 duvar=4x, 3 duvar=6x puan!',
                 ovP5: '🏐 Top hakkı = kart sayısının 1.5 katı', ovBtn: 'BAŞLA!',
-                hudLevel: 'SEVİYE', hudPairs: 'EŞLEŞME', hudScore: 'PUAN', hudCombo: 'COMBO', hudBalls: 'TOPLAR',
+                hudLevel: 'SEVİYE', hudPairs: 'EŞLEŞME', hudScore: 'PUAN', hudCombo: 'COMBO', hudBalls: 'TOP',
                 layoutSquare: 'KARE', layoutPyramid: 'PİRAMİT', layoutRect: 'DİKDÖRTGEN',
                 rememberCards: (n) => `${n} - KARTLARI HATIRLA!`, cardsHidden: 'KARTLAR KAPANDI! BAŞLA!',
                 cardOpen: (i) => `${i} AÇIK! AYNISINI BUL!`, alreadyOpen: 'ZATEN AÇIK!',
@@ -4842,7 +4880,7 @@
                 ovP3: '🃏 Card flips open when hit, ball explodes!',
                 ovP4: '🔥 Combo: 1 wall=2x, 2 walls=4x, 3 walls=6x score!',
                 ovP5: '🏐 Balls per level = 1.5× the number of cards', ovBtn: 'PLAY!',
-                hudLevel: 'LEVEL', hudPairs: 'PAIRS', hudScore: 'SCORE', hudCombo: 'COMBO', hudBalls: 'BALLS',
+                hudLevel: 'LEVEL', hudPairs: 'PAIRS', hudScore: 'SCORE', hudCombo: 'COMBO', hudBalls: 'BALL LEFT',
                 layoutSquare: 'SQUARE', layoutPyramid: 'PYRAMID', layoutRect: 'RECTANGLE',
                 rememberCards: (n) => `${n} - MEMORIZE!`, cardsHidden: 'CARDS HIDDEN! GO!',
                 cardOpen: (i) => `${i} OPEN! FIND THE MATCH!`, alreadyOpen: 'ALREADY OPEN!',
@@ -4877,7 +4915,7 @@
                 ovP3: '🃏 Karte öffnet sich wenn getroffen!',
                 ovP4: '🔥 Combo: 1 Wand=2x, 2 Wände=4x, 3 Wände=6x!',
                 ovP5: '🏐 Bälle = 1.5× Kartenanzahl', ovBtn: 'SPIELEN!',
-                hudLevel: 'LEVEL', hudPairs: 'PAARE', hudScore: 'PUNKTE', hudCombo: 'COMBO', hudBalls: 'BÄLLE',
+                hudLevel: 'LEVEL', hudPairs: 'PAARE', hudScore: 'PUNKTE', hudCombo: 'COMBO', hudBalls: 'BALL ÜBRIG',
                 layoutSquare: 'QUADRAT', layoutPyramid: 'PYRAMIDE', layoutRect: 'RECHTECK',
                 rememberCards: (n) => `${n} - EINPRÄGEN!`, cardsHidden: 'KARTEN VERDECKT! LOS!',
                 cardOpen: (i) => `${i} OFFEN! FINDE DAS PAAR!`, alreadyOpen: 'BEREITS OFFEN!',
@@ -4912,7 +4950,7 @@
                 ovP3: '🃏 La carte souvre quand touchée!',
                 ovP4: '🔥 Combo: 1 mur=2x, 2 murs=4x, 3 murs=6x!',
                 ovP5: '🏐 Balles = 1.5× nombre de cartes', ovBtn: 'JOUER!',
-                hudLevel: 'NIVEAU', hudPairs: 'PAIRES', hudScore: 'SCORE', hudCombo: 'COMBO', hudBalls: 'BALLES',
+                hudLevel: 'NIVEAU', hudPairs: 'PAIRES', hudScore: 'SCORE', hudCombo: 'COMBO', hudBalls: 'BALLES REST.',
                 layoutSquare: 'CARRÉ', layoutPyramid: 'PYRAMIDE', layoutRect: 'RECTANGLE',
                 rememberCards: (n) => `${n} - MÉMORISEZ!`, cardsHidden: 'CARTES CACHÉES! ALLEZ!',
                 cardOpen: (i) => `${i} OUVERT! TROUVEZ!`, alreadyOpen: 'DÉJÀ OUVERT!',
@@ -4947,7 +4985,7 @@
                 ovP3: '🃏 ¡La carta se abre al ser golpeada!',
                 ovP4: '🔥 Combo: 1 pared=2x, 2 paredes=4x, 3=6x!',
                 ovP5: '🏐 Bolas = 1.5× número de cartas', ovBtn: '¡JUGAR!',
-                hudLevel: 'NIVEL', hudPairs: 'PARES', hudScore: 'PUNTOS', hudCombo: 'COMBO', hudBalls: 'BOLAS',
+                hudLevel: 'NIVEL', hudPairs: 'PARES', hudScore: 'PUNTOS', hudCombo: 'COMBO', hudBalls: 'BOLAS REST.',
                 layoutSquare: 'CUADRADO', layoutPyramid: 'PIRÁMIDE', layoutRect: 'RECTÁNGULO',
                 rememberCards: (n) => `${n} - ¡MEMORIZA!`, cardsHidden: '¡CARTAS OCULTAS! ¡VAMOS!',
                 cardOpen: (i) => `${i} ¡ABIERTA! ¡ENCUENTRA EL PAR!`, alreadyOpen: '¡YA ABIERTA!',
@@ -4982,7 +5020,7 @@
                 ovP3: '🃏 Карта открывается при попадании!',
                 ovP4: '🔥 Комбо: 1 стена=2x, 2=4x, 3=6x!',
                 ovP5: '🏐 Мячи = 1.5× количество карт', ovBtn: 'ИГРАТЬ!',
-                hudLevel: 'УРОВЕНЬ', hudPairs: 'ПАРЫ', hudScore: 'ОЧКИ', hudCombo: 'КОМБО', hudBalls: 'МЯЧИ',
+                hudLevel: 'УРОВЕНЬ', hudPairs: 'ПАРЫ', hudScore: 'ОЧКИ', hudCombo: 'КОМБО', hudBalls: 'МЯЧИ ОСТ.',
                 layoutSquare: 'КВАДРАТ', layoutPyramid: 'ПИРАМИДА', layoutRect: 'ПРЯМОУГОЛЬНИК',
                 rememberCards: (n) => `${n} - ЗАПОМНИ!`, cardsHidden: 'КАРТЫ СКРЫТЫ! ВПЕРЁД!',
                 cardOpen: (i) => `${i} ОТКРЫТА! НАЙДИ ПАРУ!`, alreadyOpen: 'УЖЕ ОТКРЫТА!',
@@ -5017,7 +5055,7 @@
                 ovP3: '🃏 击中牌后翻开！',
                 ovP4: '🔥 连击：1墙=2倍，2墙=4倍，3墙=6倍！',
                 ovP5: '🏐 球数 = 牌数×1.5', ovBtn: '开始！',
-                hudLevel: '关卡', hudPairs: '配对', hudScore: '分数', hudCombo: '连击', hudBalls: '球',
+                hudLevel: '关卡', hudPairs: '配对', hudScore: '分数', hudCombo: '连击', hudBalls: '剩余球',
                 layoutSquare: '方形', layoutPyramid: '金字塔', layoutRect: '矩形',
                 rememberCards: (n) => `${n} - 记住这些牌！`, cardsHidden: '牌翻盖了！开始！',
                 cardOpen: (i) => `${i} 翻开！找对应的！`, alreadyOpen: '已经翻开！',
@@ -5052,7 +5090,7 @@
                 ovP3: '🃏 カードは当たったら開く！',
                 ovP4: '🔥 コンボ：1壁=2倍、2壁=4倍、3壁=6倍！',
                 ovP5: '🏐 ボール数 = カード数×1.5', ovBtn: 'スタート！',
-                hudLevel: 'レベル', hudPairs: 'ペア', hudScore: 'スコア', hudCombo: 'コンボ', hudBalls: 'ボール',
+                hudLevel: 'レベル', hudPairs: 'ペア', hudScore: 'スコア', hudCombo: 'コンボ', hudBalls: '残りボール',
                 layoutSquare: '正方形', layoutPyramid: 'ピラミッド', layoutRect: '長方形',
                 rememberCards: (n) => `${n} - 覚えて！`, cardsHidden: 'カード隠れた！スタート！',
                 cardOpen: (i) => `${i} 開いた！ペアを探して！`, alreadyOpen: 'すでに開いてる！',
@@ -5087,7 +5125,7 @@
                 ovP3: '🃏 A carta abre quando atingida!',
                 ovP4: '🔥 Combo: 1 parede=2x, 2=4x, 3=6x!',
                 ovP5: '🏐 Bolas = 1.5× número de cartas', ovBtn: 'JOGAR!',
-                hudLevel: 'NÍVEL', hudPairs: 'PARES', hudScore: 'PONTOS', hudCombo: 'COMBO', hudBalls: 'BOLAS',
+                hudLevel: 'NÍVEL', hudPairs: 'PARES', hudScore: 'PONTOS', hudCombo: 'COMBO', hudBalls: 'BOLAS REST.',
                 layoutSquare: 'QUADRADO', layoutPyramid: 'PIRÂMIDE', layoutRect: 'RETÂNGULO',
                 rememberCards: (n) => `${n} - MEMORIZE!`, cardsHidden: 'CARTAS VIRADAS! VAI!',
                 cardOpen: (i) => `${i} ABERTA! ENCONTRE O PAR!`, alreadyOpen: 'JÁ ABERTA!',
@@ -5122,7 +5160,7 @@
                 ovP3: '🃏 البطاقة تنفتح عند الإصابة!',
                 ovP4: '🔥 كومبو: 1 جدار=2×، 2=4×، 3=6×!',
                 ovP5: '🏐 الكرات = 1.5× عدد البطاقات', ovBtn: 'العب!',
-                hudLevel: 'المستوى', hudPairs: 'أزواج', hudScore: 'نقاط', hudCombo: 'كومبو', hudBalls: 'كرات',
+                hudLevel: 'المستوى', hudPairs: 'أزواج', hudScore: 'نقاط', hudCombo: 'كومبو', hudBalls: 'كرات متبقية',
                 layoutSquare: 'مربع', layoutPyramid: 'هرم', layoutRect: 'مستطيل',
                 rememberCards: (n) => `${n} - تذكّر!`, cardsHidden: 'البطاقات مخفية! ابدأ!',
                 cardOpen: (i) => `${i} مفتوحة! ابحث عن الزوج!`, alreadyOpen: 'مفتوحة بالفعل!',
@@ -5198,10 +5236,12 @@
             if(safe('ov-p5')) safe('ov-p5').textContent = s.ovP5;
             if(safe('ov-btn')) safe('ov-btn').textContent = s.ovBtn;
 
-            // HUD labels
-            const hudLabels = document.querySelectorAll('.hud-label');
-            const hudKeys = ['hudLevel','hudPairs','hudScore','hudCombo','hudBalls'];
-            hudKeys.forEach((k,i) => { if(hudLabels[i]) hudLabels[i].textContent = s[k]; });
+            // HUD labels - ID ile set et, siralama degisince BALL LEFT yanlislikla PUAN olmasin
+            if(safe('hud-label-level')) safe('hud-label-level').textContent = s.hudLevel;
+            if(safe('hud-label-pairs')) safe('hud-label-pairs').textContent = s.hudPairs;
+            if(safe('hud-label-score')) safe('hud-label-score').textContent = s.hudScore;
+            if(safe('hud-label-combo')) safe('hud-label-combo').textContent = s.hudCombo;
+            if(safe('hud-label-balls')) safe('hud-label-balls').textContent = s.hudBalls;
 
             // Game over panel
             const statLabels = document.querySelectorAll('.go-stat-label');
@@ -6035,6 +6075,8 @@
             document.getElementById('hmp-val').textContent = val;
             updateHmpSliderGrad(val);
             gameSettings.musicVol = val;
+            hudMusicMuted = val === 0;
+            gameSettings.musicOn = val > 0;
             const v = (val / 100) * 0.35;
             ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','fruit1MusicEl','fruit2MusicEl','win1El','win2El','win3El','win4El','win5El'].forEach(id => {
                 const a = document.getElementById(id); if(a) a.volume = v;
@@ -6043,6 +6085,12 @@
             const stSlider = document.getElementById('st-music-vol');
             if(stSlider) { stSlider.value = val; document.getElementById('st-music-vol-val').textContent = val; }
             hudMusicMuted = val === 0;
+            gameSettings.musicOn = val > 0;
+            if (val === 0) {
+                stopBgMusic(); stopMenuMusic(); stopWinMusic();
+            } else {
+                if (gameState === 'playing') startBgMusic(); else startMenuMusic();
+            }
             updateHudMusicBtn();
             saveSettings();
         }
@@ -6052,42 +6100,83 @@
             if(s) s.style.background = `linear-gradient(to right, #00e5ff ${val}%, #333 ${val}%)`;
         }
 
-        function toggleHmpMute() {
-            hudMusicMuted = !hudMusicMuted;
+        function toggleHudMusicButton(e) {
+            if (e) e.stopPropagation();
+            initAudio();
+            const popup = document.getElementById('hud-music-popup');
+            if (popup) popup.classList.remove('show');
+            hudMusicPopupOpen = false;
+            toggleHmpMute(e);
+        }
+
+        function _syncMusicUiControls() {
+            const val = gameSettings.musicVol ?? 30;
+            const hmp = document.getElementById('hmp-slider');
+            const hmpVal = document.getElementById('hmp-val');
+            if(hmp) { hmp.value = val; updateHmpSliderGrad(val); }
+            if(hmpVal) hmpVal.textContent = val;
+            const stSlider = document.getElementById('st-music-vol');
+            const stVal = document.getElementById('st-music-vol-val');
+            if(stSlider) { stSlider.value = val; if(typeof updateSliderGradient === 'function') updateSliderGradient(stSlider, '#00ffff'); }
+            if(stVal) stVal.textContent = val;
+            const menuS = document.getElementById('music-vol-slider');
+            const menuV = document.getElementById('music-vol-val');
+            if(menuS) { menuS.value = val; menuS.style.setProperty('--val', val + '%'); }
+            if(menuV) menuV.textContent = val;
+        }
+
+        function toggleHmpMute(e) {
+            if (e) e.stopPropagation();
+            initAudio();
+
+            const willMute = !(hudMusicMuted || !gameSettings.musicOn || (gameSettings.musicVol <= 0));
+            hudMusicMuted = willMute;
+            gameSettings.musicOn = !willMute;
+
+            if (!willMute && (!gameSettings.musicVol || gameSettings.musicVol <= 0)) {
+                gameSettings.musicVol = 30;
+            }
+
             const allIds = ['bgMusicEl','menuMusicEl','level2MusicEl','level3MusicEl','level4MusicEl','level5MusicEl','level6MusicEl','level7MusicEl','fruit1MusicEl','fruit2MusicEl','win1El','win2El','win3El','win4El','win5El'];
-            if (hudMusicMuted) {
-                // Fade out
+            if (willMute) {
                 allIds.forEach(id => {
                     const a = document.getElementById(id);
-                    if(a && !a.paused) fadeOutAudio(a, 500);
+                    if(a) { a.volume = 0; if(!a.paused) fadeOutAudio(a, 250); }
                 });
             } else {
-                // Fade in - sadece aktif olması gereken parçayı çal
                 const targetVol = (gameSettings.musicVol / 100) * 0.35;
                 if (gameState === 'playing') {
+                    startBgMusic();
                     const audio = getLevelMusicEl(currentLevel);
-                    if(audio) fadeInAudio(audio, targetVol, 600);
+                    if(audio) audio.volume = targetVol;
                     bgMusicNode = audio;
                 } else {
+                    startMenuMusic();
                     const audio = document.getElementById('menuMusicEl');
-                    if(audio) fadeInAudio(audio, targetVol, 600);
+                    if(audio) audio.volume = targetVol;
                 }
             }
+
+            _syncMusicUiControls();
+            saveSettings();
             updateHudMusicBtn();
             const btn = document.getElementById('hmp-mute-btn');
             if(btn) btn.textContent = hudMusicMuted ? '🔊 MÜZİĞİ AÇ' : '🔇 MÜZİĞİ KAPAT';
+            if (typeof updateMenuLabels === 'function') updateMenuLabels();
         }
 
         function updateHudMusicBtn() {
             const btn = document.getElementById('hud-music-btn');
-            const icon = document.getElementById('hud-music-icon');
+            const img = document.getElementById('hud-music-img');
             if(!btn) return;
-            if(hudMusicMuted) {
-                btn.classList.add('muted');
-                if(icon) icon.textContent = '✕';
-            } else {
-                btn.classList.remove('muted');
-                if(icon) icon.textContent = '♪';
+
+            const isMuted = hudMusicMuted || !gameSettings.musicOn || (gameSettings.musicVol <= 0);
+            btn.classList.toggle('muted', isMuted);
+            btn.title = isMuted ? 'Music Off' : 'Music On';
+
+            if(img) {
+                img.src = isMuted ? 'musicoff.png' : 'musicon.png';
+                img.alt = isMuted ? 'Music Off' : 'Music On';
             }
         }
 
@@ -6994,6 +7083,7 @@
 
         function onSettingMusic(checked) {
             gameSettings.musicOn = checked;
+            hudMusicMuted = !checked;
             saveSettings();
             if(gameState === 'playing') {
                 updateBgMusic();
