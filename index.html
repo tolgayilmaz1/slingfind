@@ -1547,6 +1547,10 @@
     <audio id="fruit1MusicEl" src="music/fruit1.ogg" loop preload="auto"></audio>
     <audio id="fruit2MusicEl" src="music/fruit2.ogg" loop preload="auto"></audio>
     <audio id="ballHitEl" src="music/ballhit.ogg" preload="auto"></audio>
+    <audio id="matchMp31El" src="music/match1.mp3" preload="auto"></audio>
+    <audio id="matchMp32El" src="music/match2.mp3" preload="auto"></audio>
+    <audio id="matchMp33El" src="music/match3.mp3" preload="auto"></audio>
+    <audio id="matchMp34El" src="music/match4.mp3" preload="auto"></audio>
     <audio id="lastHitEl" src="music/lasthit.ogg" preload="auto"></audio>
     <audio id="startEl" src="music/start.ogg" preload="auto"></audio>
     <audio id="start2El" src="music/start2.mp3" preload="auto"></audio>
@@ -2020,6 +2024,203 @@
         let WALL = { left: 8, right: 0, top: 55, bottom: 0 };
         let slingshot = { x: 0, y: 0, pullX: 0, pullY: 0, pulling: false, maxPull: 250 };
 
+        // ===== PNG SLINGSHOT ASSET =====
+        // sling.png must be in the same folder as this index.html
+        const slingAsset = new Image();
+        slingAsset.src = 'sling.png';
+
+        // ===== PNG BALL ASSET =====
+        // ball.png must be in the same folder as this index.html
+        // 1024x1024 PNG is OK; canvas will scale it down automatically.
+        const ballAsset = new Image();
+        ballAsset.src = 'ball.png';
+
+        // ===== PNG BACKGROUND ASSET =====
+        // 1.png must be in the same folder as this index.html.
+        // 1024x1536 is OK; canvas draws it cover-style to full screen.
+        const bgAsset = new Image();
+        let currentBgAssetIndex = 0;
+
+        function getBackgroundAssetForLevel(level) {
+            // Level 1: 1.png, Level 2: 2.png ... Level 21: 21.png, Level 22: 1.png again.
+            return ((Math.max(1, level) - 1) % 21) + 1;
+        }
+
+        function updateLevelBackgroundAsset() {
+            const idx = getBackgroundAssetForLevel(currentLevel);
+            if (idx !== currentBgAssetIndex) {
+                currentBgAssetIndex = idx;
+                bgAsset.src = `${idx}.png`;
+            }
+        }
+        updateLevelBackgroundAsset();
+
+        // ===== PNG CARD/CUBE ASSETS =====
+        // cube1.png ... cube10.png must be in the same folder as this index.html.
+        // Level 1=cube1, Level 2=cube2 ... Level 10=cube10, Level 11=cube1 again.
+        const cubeAssets = [];
+        for (let i = 1; i <= 10; i++) {
+            const img = new Image();
+            img.src = `cube${i}.png`;
+            cubeAssets[i] = img;
+        }
+
+        function getCubeAssetForLevel(level) {
+            const idx = ((Math.max(1, level) - 1) % 10) + 1;
+            return cubeAssets[idx];
+        }
+
+        function drawCoverImage(targetCtx, img, x, y, w, h) {
+            if (!img || !img.complete || img.naturalWidth <= 0 || img.naturalHeight <= 0) return false;
+            const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+            const sw = w / scale;
+            const sh = h / scale;
+            const sx = (img.naturalWidth - sw) / 2;
+            const sy = (img.naturalHeight - sh) / 2;
+            targetCtx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+            return true;
+        }
+
+        function drawGameBackgroundImage() {
+            updateLevelBackgroundAsset();
+            if (!bgAsset.complete || bgAsset.naturalWidth <= 0) return false;
+            ctx.save();
+            drawCoverImage(ctx, bgAsset, 0, 0, W, H);
+            // Hafif koyu perde: hareketli efektler, kartlar ve neonlar kaybolmasın.
+            const bgDim = ctx.createLinearGradient(0, 0, 0, H);
+            bgDim.addColorStop(0, 'rgba(6,3,15,0.42)');
+            bgDim.addColorStop(0.5, 'rgba(6,3,15,0.26)');
+            bgDim.addColorStop(1, 'rgba(6,3,15,0.50)');
+            ctx.fillStyle = bgDim;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+            return true;
+        }
+
+        function drawLevelCubeCard(targetCtx, size) {
+            const cubeImg = getCubeAssetForLevel(currentLevel);
+            if (!cubeImg || !cubeImg.complete || cubeImg.naturalWidth <= 0) return false;
+            targetCtx.save();
+            targetCtx.shadowColor = 'rgba(0,229,255,0.55)';
+            targetCtx.shadowBlur = 10;
+            const pad = Math.max(1, size * 0.02);
+            targetCtx.drawImage(cubeImg, -size / 2 - pad, -size / 2 - pad, size + pad * 2, size + pad * 2);
+            targetCtx.restore();
+            return true;
+        }
+
+        function drawBallImage(targetCtx, x, y, r, fireRatio=0) {
+            targetCtx.save();
+
+            if (fireRatio > 0) {
+                targetCtx.shadowColor = fireRatio > 0.45 ? '#ff3300' : '#ff9900';
+                targetCtx.shadowBlur = 18 + fireRatio * 24;
+            } else {
+                targetCtx.shadowColor = '#00e5ff';
+                targetCtx.shadowBlur = 12;
+            }
+
+            const size = r * 2.55;
+            if (ballAsset.complete && ballAsset.naturalWidth > 0) {
+                targetCtx.drawImage(ballAsset, x - size / 2, y - size / 2, size, size);
+            } else {
+                const g = targetCtx.createRadialGradient(x - r * 0.35, y - r * 0.35, 1, x, y, r);
+                g.addColorStop(0, '#ffffff');
+                g.addColorStop(1, fireRatio > 0.45 ? '#ff3300' : (fireRatio > 0 ? '#ff9900' : '#00e5ff'));
+                targetCtx.fillStyle = g;
+                targetCtx.beginPath();
+                targetCtx.arc(x, y, r, 0, Math.PI * 2);
+                targetCtx.fill();
+                targetCtx.strokeStyle = '#fff';
+                targetCtx.lineWidth = 2;
+                targetCtx.stroke();
+            }
+
+            // Duvarlardan sekince eski ateşlenme hissi kalsın.
+            if (fireRatio > 0) {
+                targetCtx.globalCompositeOperation = 'source-atop';
+                targetCtx.fillStyle = `rgba(255,${Math.round(110*(1-fireRatio))},0,${0.12 + fireRatio * 0.20})`;
+                targetCtx.beginPath();
+                targetCtx.arc(x, y, r * 1.35, 0, Math.PI * 2);
+                targetCtx.fill();
+            }
+
+            targetCtx.restore();
+        }
+
+        function clampVal(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+        function drawSlingAsset(targetCtx, sx, sy, px, py, pulling, baseW, baseH) {
+            const viewW = baseW || W;
+            const viewH = baseH || H;
+            const imgH = clampVal(viewW * 0.27, 92, 145);
+            const imgW = imgH * (227 / 407);
+            const drawX = sx - imgW * 0.5;
+            const drawY = sy - imgH * 0.52;
+
+            // Fork points are calibrated for the supplied sling.png image.
+            const leftX = drawX + imgW * 0.22;
+            const rightX = drawX + imgW * 0.78;
+            const forkY = drawY + imgH * 0.18;
+            const restX = sx;
+            const restY = drawY + imgH * 0.28;
+            const pouchX = pulling ? px : restX;
+            const pouchY = pulling ? py : restY;
+
+            targetCtx.save();
+            // Lastik arkada kalsın, PNG gövde üstüne otursun.
+            targetCtx.strokeStyle = pulling ? '#d68a42' : 'rgba(214,138,66,0.85)';
+            targetCtx.lineWidth = Math.max(3, imgW * 0.055);
+            targetCtx.lineCap = 'round';
+            targetCtx.lineJoin = 'round';
+            targetCtx.shadowColor = pulling ? 'rgba(255,204,0,0.45)' : 'rgba(0,0,0,0)';
+            targetCtx.shadowBlur = pulling ? 7 : 0;
+            targetCtx.beginPath();
+            if (pulling) {
+                targetCtx.moveTo(leftX, forkY);
+                targetCtx.lineTo(pouchX, pouchY);
+                targetCtx.lineTo(rightX, forkY);
+            } else {
+                targetCtx.moveTo(leftX, forkY);
+                targetCtx.quadraticCurveTo(restX, restY + 3, rightX, forkY);
+            }
+            targetCtx.stroke();
+            targetCtx.restore();
+
+            targetCtx.save();
+            if (slingAsset.complete && slingAsset.naturalWidth > 0) {
+                targetCtx.drawImage(slingAsset, drawX, drawY, imgW, imgH);
+            } else {
+                // PNG yüklenemezse oyun bozulmasın diye eski basit sapan fallback.
+                targetCtx.fillStyle = '#5e5e5e';
+                targetCtx.fillRect(sx - 4, sy + 12, 8, 50);
+                targetCtx.strokeStyle = '#8b5a2b';
+                targetCtx.lineWidth = 9;
+                targetCtx.lineCap = 'round';
+                targetCtx.beginPath(); targetCtx.moveTo(sx - 15, sy - 11); targetCtx.lineTo(sx - 9, sy + 14); targetCtx.stroke();
+                targetCtx.beginPath(); targetCtx.moveTo(sx + 15, sy - 11); targetCtx.lineTo(sx + 9, sy + 14); targetCtx.stroke();
+            }
+            targetCtx.restore();
+
+            if (pulling) {
+                const pullDist = Math.hypot(sx - px, sy - py);
+                const pullRatio = clampVal(pullDist / slingshot.maxPull, 0, 1);
+                const r = Math.max(7, imgW * 0.15);
+                targetCtx.save();
+                drawBallImage(targetCtx, pouchX, pouchY, r, pullRatio * 0.15);
+
+                targetCtx.shadowColor = 'rgba(0,0,0,0.45)';
+                targetCtx.shadowBlur = 4;
+                targetCtx.strokeStyle = '#6b3d22';
+                targetCtx.lineWidth = Math.max(3, imgW * 0.045);
+                targetCtx.beginPath();
+                targetCtx.arc(pouchX, pouchY + r * 0.1, r * 1.15, Math.PI * 0.08, Math.PI * 0.92);
+                targetCtx.stroke();
+                targetCtx.restore();
+            }
+        }
+
+
         function resize() {
             // visualViewport Android'de daha güvenilir
             let vw = (window.visualViewport ? window.visualViewport.width : window.innerWidth);
@@ -2421,6 +2622,13 @@
                 a.play().catch(() => {});
                 return true;
             } catch(e) { return false; }
+        }
+
+
+        function playLevelMatchSound() {
+            // Level 1: match1.mp3, Level 2: match2.mp3, Level 3: match3.mp3, Level 4: match4.mp3, Level 5: match1.mp3 ...
+            const idx = ((Math.max(1, currentLevel) - 1) % 4) + 1;
+            return playFileSfx(`matchMp3${idx}El`, 1.0);
         }
 
         function playBallHitFile(isLast=false) {
@@ -3500,15 +3708,17 @@
             if (!theme) return;
             bgFrame++;
 
-            // Tema arka plan gradyanı
-            ctx.fillStyle = theme.bg1; ctx.fillRect(0, 0, W, H);
-            let grad = ctx.createLinearGradient(0, 0, 0, H);
-            grad.addColorStop(0, theme.bg1);
-            grad.addColorStop(0.5, theme.bg2);
-            grad.addColorStop(1, theme.bg3);
-            ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+            // 1.png komple oyun arkaplanı. Yüklenmezse eski gradient çalışır.
+            if (!drawGameBackgroundImage()) {
+                ctx.fillStyle = theme.bg1; ctx.fillRect(0, 0, W, H);
+                let grad = ctx.createLinearGradient(0, 0, 0, H);
+                grad.addColorStop(0, theme.bg1);
+                grad.addColorStop(0.5, theme.bg2);
+                grad.addColorStop(1, theme.bg3);
+                ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+            }
 
-            // Parçacıkları güncelle ve çiz
+            // Eski hareketli level efektleri fotoğrafın ÜSTÜNDE kalır.
             theme.update(bgParticles, W, H);
             theme.draw(ctx, bgParticles, W, H);
         }
@@ -3962,17 +4172,21 @@
                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.fillText(this.icon, 0, 0);
                 } else {
-                    ctx.fillStyle = '#1a0a2e';
-                    ctx.shadowColor = '#ff3366'; ctx.shadowBlur = 10;
-                    ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
-                    ctx.shadowBlur = 0;
-                    ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 3;
-                    ctx.strokeRect(-this.size/2, -this.size/2, this.size, this.size);
+                    // Kapalı soru işaretli kutu artık level sırasına göre cube PNG kullanır.
+                    // 1-10 arası cube1..cube10, sonra tekrar başa döner.
+                    if (!drawLevelCubeCard(ctx, this.size)) {
+                        ctx.fillStyle = '#1a0a2e';
+                        ctx.shadowColor = '#ff3366'; ctx.shadowBlur = 10;
+                        ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                        ctx.shadowBlur = 0;
+                        ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 3;
+                        ctx.strokeRect(-this.size/2, -this.size/2, this.size, this.size);
 
-                    ctx.fillStyle = '#ff3366';
-                    ctx.font = `bold ${this.size * 0.5}px sans-serif`;
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillText('?', 0, 0);
+                        ctx.fillStyle = '#ff3366';
+                        ctx.font = `bold ${this.size * 0.5}px sans-serif`;
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText('?', 0, 0);
+                    }
                 }
 
                 // Hint / rescue isareti: es karti parlat ve ok gibi hedef goster
@@ -4149,22 +4363,7 @@
             draw() {
                 if (!this.active) return;
                 let fireRatio = this.getFireRatio();
-                let col = this.getBallColor(fireRatio);
-                ctx.save(); ctx.translate(this.x, this.y);
-                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI*2);
-                let grad = ctx.createRadialGradient(-4, -4, 0, 0, 0, this.radius);
-                grad.addColorStop(0, col.inner); grad.addColorStop(1, col.outer);
-                ctx.fillStyle = grad; ctx.fill();
-                ctx.strokeStyle = fireRatio > 0.3 ? '#ffcc00' : '#fff'; ctx.lineWidth = 2; ctx.stroke();
-                ctx.shadowColor = col.glow; ctx.shadowBlur = fireRatio > 0 ? 20 + fireRatio * 20 : 15;
-                // Fire aura
-                if (fireRatio > 0) {
-                    ctx.beginPath(); ctx.arc(0, 0, this.radius * (1 + fireRatio * 0.5), 0, Math.PI*2);
-                    ctx.fillStyle = `rgba(255,${Math.round(100*(1-fireRatio))},0,${fireRatio * 0.25})`; ctx.fill();
-                }
-                ctx.beginPath(); ctx.arc(0, 0, this.radius*0.5, 0, Math.PI*2);
-                ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fill();
-                ctx.restore();
+                drawBallImage(ctx, this.x, this.y, this.radius, fireRatio);
             }
         }
 
@@ -4233,7 +4432,7 @@
             let centerX = areaLeft + areaW / 2;
             let centerY = areaTop  + areaH / 2;
 
-            let gap = Math.max(6, Math.min(12, W * 0.015));
+            let gap = 3; // cube kartlar neredeyse bitişik dursun
             let cols, rows;
 
             if (layoutType === 'square') {
@@ -4316,6 +4515,7 @@
         }
 
         function initLevel(level) {
+            if (typeof updateLevelBackgroundAsset === 'function') updateLevelBackgroundAsset();
             cards = []; projectiles = []; fxParticles = []; fruitParticles = []; burnParticles = [];
             rescueHintCard = null; rescueHintActiveUntil = 0; slowMoFrames = 0; freeHintShownThisOpen = false; freeHintShotsSinceOpen = 0; freeHintLastEvaluatedShot = 0; rescuePulledForCurrentOpen = false;
             lastShotCinematic = { active:false, frames:0, max:0, x:0, y:0, triggered:false };
@@ -4535,8 +4735,8 @@
                                         ));
                                     }
 
-                                    // Esleme sesi
-                                    playMatchSound();
+                                    // Eşleşme sesi: level bazlı match1-4 mp3 döngüsü
+                                    playLevelMatchSound();
 
                                     firstHitCard = null;
                                     freeHintShotsSinceOpen = 0;
@@ -4633,20 +4833,11 @@
             let sx = slingshot.x, sy = slingshot.y;
             let px = slingshot.pullX, py = slingshot.pullY;
 
-            ctx.save();
-            ctx.fillStyle = '#5e5e5e';
-            ctx.fillRect(sx - 4, sy + 12, 8, 50);
-            ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 9; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(sx - 15, sy - 11); ctx.lineTo(sx - 9, sy + 14); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(sx + 15, sy - 11); ctx.lineTo(sx + 9, sy + 14); ctx.stroke();
-            ctx.restore();
+            // Yeni PNG sapan + çekince gerilen lastik
+            drawSlingAsset(ctx, sx, sy, px, py, slingshot.pulling, W, H);
 
-            ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-            if (!slingshot.pulling) {
-                ctx.beginPath(); ctx.moveTo(sx - 15, sy - 8); ctx.quadraticCurveTo(sx, sy - 5, sx + 15, sy - 8); ctx.stroke();
-            } else {
-                ctx.beginPath(); ctx.moveTo(sx - 15, sy - 8); ctx.lineTo(px, py); ctx.lineTo(sx + 15, sy - 8); ctx.stroke();
-
+            // Gerince eski yörünge çizimi aynen devam.
+            if (slingshot.pulling) {
                 let dx = sx - px, dy = sy - py;
                 let dist = Math.hypot(dx, dy);
                 if (dist > 10) {
@@ -4660,7 +4851,6 @@
                     if (trajectoryEnabled) {
                         const STEPS = 120;
                         const STEP_SIZE = 0.7;
-                        let dotCount = 0;
                         let wallBounces = 0;
                         for (let i = 1; i <= STEPS; i++) {
                             simX += simVx * STEP_SIZE;
@@ -4671,12 +4861,10 @@
                             if (simY < WALL.top)    { simY = WALL.top;    simVy *= -BOUNCE_DAMPING; bounced = true; wallBounces++; }
                             if (simY > WALL.bottom) { simY = WALL.bottom; simVy *= -BOUNCE_DAMPING; bounced = true; wallBounces++; }
 
-                            // Her 3 adımda nokta çiz (sık nokta = yakın, seyrek = uzak)
                             if (i % 3 === 0) {
                                 let progress = i / STEPS;
                                 let alpha = (1 - progress) * (wallBounces < 2 ? 0.9 : wallBounces < 4 ? 0.5 : 0.25);
                                 let dotSize = Math.max(1, 4.5 - progress * 3);
-                                // Duvar sekme noktasında parlak işaret
                                 if (bounced) {
                                     ctx.save();
                                     ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 1.5})`;
@@ -4684,15 +4872,13 @@
                                     ctx.beginPath(); ctx.arc(simX, simY, dotSize + 2, 0, Math.PI*2); ctx.fill();
                                     ctx.restore();
                                 }
-                                // Normal yörünge noktası
                                 let r = Math.round(0 + wallBounces * 60);
                                 let g = Math.round(255 - wallBounces * 50);
                                 let b = 255;
                                 ctx.fillStyle = `rgba(${Math.min(255,r)},${Math.max(0,g)},${b},${alpha})`;
                                 ctx.beginPath(); ctx.arc(simX, simY, dotSize, 0, Math.PI*2); ctx.fill();
-                                dotCount++;
                             }
-                            if (wallBounces >= 6) break; // 6 duvar sekme sonra bırak
+                            if (wallBounces >= 6) break;
                         }
                     }
                 }
@@ -6635,19 +6821,8 @@
 
         // ── Yardımcı çiziciler ──────────────────────────────────────
         function demoDrawSling(sx,sy,px,py) {
-            let fW=demoW*.038, fH=demoH*.065;
-            demoCtx.save();
-            demoCtx.strokeStyle='#8B6914'; demoCtx.lineWidth=Math.max(3,demoW*.006);
-            demoCtx.beginPath(); demoCtx.moveTo(sx,sy+fH); demoCtx.lineTo(sx,sy+fH*2.2); demoCtx.stroke();
-            demoCtx.beginPath(); demoCtx.moveTo(sx,sy+fH*.4); demoCtx.lineTo(sx-fW,sy-fH*.25); demoCtx.stroke();
-            demoCtx.beginPath(); demoCtx.moveTo(sx,sy+fH*.4); demoCtx.lineTo(sx+fW,sy-fH*.25); demoCtx.stroke();
-            let pulling = (px!==sx||py!==sy);
-            demoCtx.strokeStyle=pulling?'#cc8800':'#886600';
-            demoCtx.lineWidth=Math.max(2,demoW*.004);
-            demoCtx.beginPath();
-            demoCtx.moveTo(sx-fW,sy-fH*.25); demoCtx.lineTo(px,py); demoCtx.lineTo(sx+fW,sy-fH*.25);
-            demoCtx.stroke();
-            demoCtx.restore();
+            let pulling = (px !== sx || py !== sy);
+            drawSlingAsset(demoCtx, sx, sy, px, py, pulling, demoW, demoH);
         }
 
         function demoDrawBall(x,y,fire) {
