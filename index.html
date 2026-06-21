@@ -2345,40 +2345,43 @@
             return blockedFromSling || nearbyBlockers >= 3;
         }
 
+        function getActiveLiveCards(ignoreCard=null) {
+            return cards.filter(c => c && c.alive && !c.matched && c !== ignoreCard);
+        }
+
         function hasClearRescueLaneToCard(target, openedCard=null) {
-            // Cek-cikar icin son emniyet: sapandan hedef kartin merkezine ve kenarlarina
-            // en az bir temiz hat varsa kart aslinda oynanabilirdir, disari alma.
-            if (!target) return true;
-            const r = (target.size || 60) * 0.58;
-            const probes = [
-                {x: target.x, y: target.y},
-                {x: target.x - r, y: target.y},
-                {x: target.x + r, y: target.y},
-                {x: target.x, y: target.y - r},
-                {x: target.x, y: target.y + r},
-                {x: target.x - r*0.72, y: target.y - r*0.72},
-                {x: target.x + r*0.72, y: target.y - r*0.72},
-                {x: target.x - r*0.72, y: target.y + r*0.72},
-                {x: target.x + r*0.72, y: target.y + r*0.72}
-            ];
-            for (const pt of probes) {
-                if (!isLineBlockedByOtherCards(slingshot.x, slingshot.y, {x: pt.x, y: pt.y, size: Math.max(10, target.size*0.35)}, openedCard, target)) {
-                    return true;
-                }
-            }
+            // Yeni rescue mantığında ana karar bu fonksiyona bağlı değil.
+            // Geriye dönük uyumluluk için bırakıldı.
             return false;
         }
 
         function getRescueNeighborInfo(card, ignoreCard=null, includeOpenedAsBlocker=true) {
-            // Kartin 4 ana yonunde (sol/sag/yukari/asagi) bitisik komsu var mi?
-            // Cek-cikar kararinda sadece bu sayim kullanilir; rastgele uzak kartlar sayilmaz.
-            if (!card) return { left:false, right:false, up:false, down:false, sidesClosed:0, closeBlockers:0 };
+            // SABIT 4x4 / 5x5 varsayma yok.
+            // O an SAHADA KALAN canlı kutulara göre komşuluk hesabı yapar.
+            if (!card) {
+                return {
+                    left:false, right:false, up:false, down:false,
+                    sidesClosed:0, freeSides:4, closeBlockers:0,
+                    isOuter:true, isInner:false
+                };
+            }
+
+            const liveCards = getActiveLiveCards();
             const s = card.size || 60;
-            let left=false, right=false, up=false, down=false;
+
+            // Kutular azaldığında 4x4 -> 3x3 -> 1x1 küçülmesi, ya da 5x5 / 6x6 büyümesi fark etmez.
+            // Sadece mevcut canlı kutuların satır/sütun komşuluğuna bakıyoruz.
+            const rowTol = s * 0.48;
+            const colTol = s * 0.48;
+            const minStep = s * 0.50;
+            const maxStep = s * 1.60;
+
+            let left = false, right = false, up = false, down = false;
+            let nearestLeft = Infinity, nearestRight = Infinity, nearestUp = Infinity, nearestDown = Infinity;
             let closeBlockers = 0;
 
-            for (const c of cards) {
-                if (!c.alive || c.matched || c === card) continue;
+            for (const c of liveCards) {
+                if (c === card) continue;
                 if (ignoreCard && c === ignoreCard) continue;
 
                 const dx = c.x - card.x;
@@ -2386,56 +2389,67 @@
                 const adx = Math.abs(dx);
                 const ady = Math.abs(dy);
 
-                // Araliklar gap 0-3px iken de calissin diye kontrollu gevsek.
-                const sameRow = ady < s * 0.46;
-                const sameCol = adx < s * 0.46;
-                const nextCellX = adx > s * 0.56 && adx < s * 1.38;
-                const nextCellY = ady > s * 0.56 && ady < s * 1.38;
+                if (Math.hypot(dx, dy) < s * 1.55) closeBlockers++;
 
-                if (sameRow && nextCellX) {
-                    if (dx < 0) left = true; else right = true;
+                // Aynı satırdaki yatay komşular
+                if (ady <= rowTol && adx >= minStep && adx <= maxStep) {
+                    if (dx < 0 && adx < nearestLeft) { left = true; nearestLeft = adx; }
+                    if (dx > 0 && adx < nearestRight) { right = true; nearestRight = adx; }
                 }
-                if (sameCol && nextCellY) {
-                    if (dy < 0) up = true; else down = true;
+
+                // Aynı sütundaki dikey komşular
+                if (adx <= colTol && ady >= minStep && ady <= maxStep) {
+                    if (dy < 0 && ady < nearestUp) { up = true; nearestUp = ady; }
+                    if (dy > 0 && ady < nearestDown) { down = true; nearestDown = ady; }
                 }
-                if (Math.hypot(dx, dy) < s * 1.42) closeBlockers++;
             }
 
-            return { left, right, up, down, sidesClosed:[left,right,up,down].filter(Boolean).length, closeBlockers };
+            const sidesClosed = [left, right, up, down].filter(Boolean).length;
+            const freeSides = 4 - sidesClosed;
+
+            return {
+                left, right, up, down,
+                sidesClosed,
+                freeSides,
+                closeBlockers,
+                isOuter: freeSides > 0,
+                isInner: sidesClosed >= 4
+            };
         }
 
         function isCardTrulyImpossibleForShot(target, openedCard=null) {
-            // Cek-cikar kuralı:
-            // Oyuncu dis/kenar bir karti acarsa ve onun esi TAM ICERIDE/ortada 4 yandan kapali kaldiysa,
-            // sadece o ES kart disari alinir. Iki kart da distaysa veya hedef 4 yandan kapali degilse ASLA cekilmez.
+            // NET KURAL:
+            // 1) Oyuncunun açtığı kart DIŞ/KENAR kart olacak.
+            // 2) Onun eşi o an sahada kalan kutulara göre TAM İÇERİDE (4 ana yönde komşulu) olacak.
+            // 3) Böyleyse SADECE o eş kart dışarı alınır.
+            // 4) İki kart da dıştaysa asla çekme.
             if (!target || !target.alive || target.matched) return false;
-            if (!openedCard || openedCard.matched || openedCard.pairId !== target.pairId) return false;
-            if (target.revealed) return false;
+            if (!openedCard || !openedCard.alive || openedCard.matched) return false;
             if (target === openedCard) return false;
+            if (openedCard.pairId !== target.pairId) return false;
+            if (target.revealed) return false;
 
-            const targetInfo = getRescueNeighborInfo(target, null, true);
-            const openedInfo = getRescueNeighborInfo(openedCard, null, true);
+            const liveCards = getActiveLiveCards();
+            if (liveCards.length < 4) return false;
 
-            // Hedef kesinlikle "ic kart" olmali: 4 ana yonu da kapali.
-            // 3 yani kapali veya 2 dis kart durumunda cekme yok.
-            if (targetInfo.sidesClosed < 4) return false;
+            const targetInfo = getRescueNeighborInfo(target, null);
+            const openedInfo = getRescueNeighborInfo(openedCard, null);
+
+            // Açılan kart dışta değilse rescue yok.
+            if (!openedInfo.isOuter) return false;
+
+            // Eş kart gerçekten içerde gömülü değilse rescue yok.
+            if (!targetInfo.isInner) return false;
             if (targetInfo.closeBlockers < 4) return false;
 
-            // Oyuncunun actigi kart dis/kenar kart olmali. O da 4 yandan kapaliysa bu bir "disaridan actim,
-            // esi icerde kaldi" senaryosu degildir; oyun sapitip rastgele cekmesin.
-            if (openedInfo.sidesClosed >= 4) return false;
-
-            // Ek emniyet: hedef, acilan karttan daha kapali olmali.
+            // Eş kart, açılan karttan belirgin biçimde daha içeride olmalı.
             if (targetInfo.sidesClosed <= openedInfo.sidesClosed) return false;
-
-            // Hedefe sapandan makul temiz bir temas hatti varsa oynanabilir say, disari alma.
-            // Burada openedCard'i ignore etmiyoruz; acik kart fiziksel olarak hala yolda durur.
-            if (hasClearRescueLaneToCard(target, null)) return false;
+            if ((targetInfo.sidesClosed - openedInfo.sidesClosed) < 2) return false;
 
             return true;
         }
 
-                function overlapsAnyCard(x, y, size, ignoreCard=null) {
+        function overlapsAnyCard(x, y, size, ignoreCard=null) {
             for (const c of cards) {
                 if (!c.alive || c.matched || c === ignoreCard) continue;
                 if (Math.abs(c.x - x) < (c.size + size) * 0.60 && Math.abs(c.y - y) < (c.size + size) * 0.60) return true;
@@ -2553,7 +2567,8 @@
 
         function maybeActivateRescueHint(openedCard) {
             // Burasi sadece oyuncu ILK karti actiktan sonra calisir.
-            // Cek-cikar, layout duzeltici degil: yalnizca acilan kartin esi gercekten vurulamazsa devreye girer.
+            // Yeni mantik sabit grid boyutuna degil, o an sahada kalan canli kutulara bakar.
+            // 'Dista acildi + esi tam icerde kaldi' durumunda sadece o es karti disari alir.
             if (!openedCard || openedCard.matched || firstHitCard !== openedCard) return;
             const pair = findPairCard(openedCard);
             if (!pair) return;
